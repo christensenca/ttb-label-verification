@@ -1,0 +1,149 @@
+{
+  "don_julio": {
+    "openai/gpt-4o-mini": {
+      "label": {
+        "front_label_text": "TEQUILA EN M\u00c9XICO\n\n19 42\nTEQUILA RESERVA DE\nDon Julio\n100% DE AGAVE\n\n40% alc./vol.\n750 mL\n\nTEQUILA BLANCO\n\n",
+        "back_label_text": "19 42\nIMPORTED BY DIAGEO, NEW YORK, NY\nPRODUCT OF MEXICO\nNOM 1449 CRT\n\nServing Facts: Serving size: 1.5 fl oz (44 mL); Servings per container: 17; Amount Per Serving: Alcohol by volume: 40% (80 proof); Fl oz of alcohol: 0.6; Calories: 96; Carbohydrates: 0g; Fat: 0g; Protein: 0g\n\nGOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.\n\ndrinkiq.com\nIA 5C* 15C",
+        "brand": "Don Julio",
+        "class_type": "Tequila Blanco",
+        "alcohol_content": 40.0,
+        "net_contents": "750 mL",
+        "producer_name": "DIAGEO",
+        "producer_address": "NEW YORK, NY",
+        "is_imported": true,
+        "country_of_origin": "MEXICO",
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS."
+      },
+      "latency_ms": 8635.974666976836,
+      "in_tok": 38075,
+      "out_tok": 430,
+      "error": null
+    }
+  },
+  "gray_whale": {
+    "openai/gpt-4o-mini": {
+      "label": {
+        "front_label_text": "GRAY WHALE  \nGIN  \nJUNIPER  \nBig Sur  \nLIMES  \nTemecula  \nSEA KELP  \nMendocino Coast  \nMINT  \nSanta Cruz  \nFIR TREE  \nSonoma  \nALMONDS  \nCentral Valley  \nPerfected With Six  \nCALIFORNIAN  \nBOTANICALS",
+        "back_label_text": "GRAY WHALE  \nEvery year the California Gray Whale makes a 12,000-mile  \nmigration from the warm lagoons of the Baja Peninsula to the  \ncool waters of the Arctic. Our small batch gin is a celebration  \nof this incredible journey.  \n  \nTaste your way along the Pacific Coastline with every sip of  \nthis award-winning gin. First, the aroma of coastal fir  \nyou followed by juniper and a subtle hint of coastal fruits.  \nAs you move up the path, and take in the flavor, the  \nkombo sea kelp are rounded out by a harmony with fresh  \nherbs. Six Californian botanicals, in perfect balance with  \ncommunis, citrus tailoflati, peppermint and other  \nbotanicals create a unique taste that makes Gray Whale  \ngin unlike any other gin in the world. Enjoy the journey.  \n  \nSEVEN TIMES DISTILLED. - GLUTEN FREE.  \n  \nDISTILLED & BOTTLED BY GOLDEN STATE DISTILLERY, PARRIS, CALIFORNIA  \nOCEANA  \nWe proudly support  \nWorld's oceans  \n/GrayWhaleGin  \nBatch NO. 037  \n43% ALC./VOL. 750ML  \n100% GRAIN NEUTRAL SPIRITS  \nGOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+        "brand": "GRAY WHALE",
+        "class_type": "GIN",
+        "alcohol_content": 43.0,
+        "net_contents": "750ML",
+        "producer_name": "GOLDEN STATE DISTILLERY",
+        "producer_address": "PARRIS, CALIFORNIA",
+        "is_imported": false,
+        "country_of_origin": null,
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS."
+      },
+      "latency_ms": 9297.014707990456,
+      "in_tok": 38075,
+      "out_tok": 671,
+      "error": null
+    }
+  },
+  "hendricks": {
+    "openai/gpt-4o-mini": {
+      "label": {
+        "front_label_text": "HENDRICK'S\nGIN\n750 ML 44% Alc. by Vol.\n88 PROOF\nSMALL BATCH HANDCRAFTED\nDISTILLED and BOTTLED IN SCOTLAND",
+        "back_label_text": "This HANDCRAFTED GIN is distilled with a sumptuous symphony of no less than 11 botanicals including the traditional juniper, coriander and citrus peel. The unexpected infusion of cucumber and rose petals results in a most iconoclastic exquisitely delicious gin.\nIT IS NOT FOR EVERYONE.\n\nHENDRICK'S GIN & TONIC\n1 part HENDRICK'S GIN\n3 parts Premium Tonic Water\n3 slices of Cucumber\n\nPLEASE DRINK THE UNUSUAL RESPONSIBLY\nBottled By William Grant & Sons Ltd., Scotland ML-ARN\n\nhendricksgin.com\nDISTILLED FROM GRAIN\n100% RECYCLABLE BOTTLE\n\nImported by\nWILLIAM GRANT & SONS, INC.\nNEW YORK, NY\n\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery.",
+        "brand": "HENDRICK'S",
+        "class_type": "GIN",
+        "alcohol_content": 44.0,
+        "net_contents": "750 ML",
+        "producer_name": "WILLIAM GRANT & SONS, INC.",
+        "producer_address": "NEW YORK, NY",
+        "is_imported": true,
+        "country_of_origin": "SCOTLAND",
+        "government_warning_text": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery."
+      },
+      "latency_ms": 7787.253416958265,
+      "in_tok": 38075,
+      "out_tok": 393,
+      "error": null
+    }
+  },
+  "makers_mark": {
+    "openai/gpt-4o-mini": {
+      "label": {
+        "front_label_text": "Maker's Mark\nKENTUCKY STRAIGHT BOURBON\nWHISKY\nHandmade since 1953\nMade by the Maker's Mark Distillery, Inc., Star Hill Farm, Loretto, KY, under the personal supervision of FOR SAMUEL'S\n750 mL 45% ALC./VOL.",
+        "back_label_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE\nSURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC\nBEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF\nBIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES\nIMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE\nMACHINERY, AND MAY CAUSE HEALTH PROBLEMS.\nBOTTLED BY AND BOTTLED BY\nTHE MAKER'S MARK DISTILLERY, INC.\nSTAR HILL FARM, LORETTO, KY 40037\nCA CRV",
+        "brand": "Maker's Mark",
+        "class_type": "WHISKY",
+        "alcohol_content": 45.0,
+        "net_contents": "750 mL",
+        "producer_name": "Maker's Mark Distillery, Inc.",
+        "producer_address": "Star Hill Farm, Loretto, KY",
+        "is_imported": false,
+        "country_of_origin": null,
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE\nSURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC\nBEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF\nBIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES\nIMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE\nMACHINERY, AND MAY CAUSE HEALTH PROBLEMS."
+      },
+      "latency_ms": 6396.297166997101,
+      "in_tok": 38075,
+      "out_tok": 387,
+      "error": null
+    }
+  },
+  "titos": {
+    "openai/gpt-4o-mini": {
+      "label": {
+        "front_label_text": "Tito's\nHandmade\nVODKA\nAward Winning American Vodka\nCrafted in an Old Fashioned Way\nAUSTIN, TEXAS",
+        "back_label_text": "Tito's Handmade Vodka\nDesigned to be Savored\nGLUTEN-FREE*DISTILLED 6 TIMES\nUnanimous Double Gold Medal Winner\nof the World Spirits Competition\n\nTwo handmade means we cook each batch\nwith care and attention to detail. Thanks for your support; enjoy responsibly!\n\nGOVERNMENT WARNING: \n(1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. \n(2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.\ntitosvodka.com\n80 Proof\nDISTILLED FROM 100% CORN\nAUSTIN, TX",
+        "brand": "Tito's",
+        "class_type": "Vodka",
+        "alcohol_content": 40.0,
+        "net_contents": null,
+        "producer_name": "Fifth Generation, Inc.",
+        "producer_address": "Austin, TX",
+        "is_imported": false,
+        "country_of_origin": null,
+        "government_warning_text": "GOVERNMENT WARNING: \n(1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. \n(2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems."
+      },
+      "latency_ms": 5870.022707968019,
+      "in_tok": 38075,
+      "out_tok": 312,
+      "error": null
+    }
+  },
+  "whistlepig": {
+    "openai/gpt-4o-mini": {
+      "label": {
+        "front_label_text": "WHISTLEPIG\nPIGGYBACK\n100% RYE WHISKEY\n96.56 PROOF\n750 ML\nAGED 6 YEARS\nSMALL BATCH\nFARM AND DISTILLERY",
+        "back_label_text": "RYE WHISKEY\nWHISTLEPIG\n-PIGGYBACK 100% RYE WHISKEY-\nOur whiskey vision knows no bounds. PiggyBack 100% Rye is made from 100% Rye for full and\nrich flavor, because anything worth doing is worth doing at 100.\nThe perfect partner to PiggyBack 100 Proof Bourbon.\n\nGOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+        "brand": "WHISTLEPIG",
+        "class_type": "RYE WHISKEY",
+        "alcohol_content": 48.28,
+        "net_contents": "750 ML",
+        "producer_name": "WHISTLEPIG",
+        "producer_address": null,
+        "is_imported": false,
+        "country_of_origin": null,
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS."
+      },
+      "latency_ms": 7160.47212498961,
+      "in_tok": 38075,
+      "out_tok": 383,
+      "error": null
+    }
+  },
+  "woodfords": {
+    "openai/gpt-4o-mini": {
+      "label": {
+        "front_label_text": "DISTILLER'S SELECT\nWOODFORD RESERVE\u00ae\nKENTUCKY STRAIGHT RYE WHISKEY\n750 mL\nLABEL BATCH 1289 3259\nBOTTLE NO. 0000\nSELECTED BY\n\nPROOF 90.4",
+        "back_label_text": "PRODUCED BY THE WOODFORD RESERVE DISTILLERY\nVERSAILLES, KENTUCKY USA\n\nGOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY AND MAY CAUSE HEALTH PROBLEMS.\n\nRESPONSIBILITY.ORG",
+        "brand": "WOODFORD RESERVE",
+        "class_type": "KENTUCKY STRAIGHT RYE WHISKEY",
+        "alcohol_content": 45.2,
+        "net_contents": "750 mL",
+        "producer_name": "WOODFORD RESERVE DISTILLERY",
+        "producer_address": "VERSAILLES, KENTUCKY",
+        "is_imported": false,
+        "country_of_origin": null,
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY AND MAY CAUSE HEALTH PROBLEMS."
+      },
+      "latency_ms": 6558.5842080181465,
+      "in_tok": 38075,
+      "out_tok": 366,
+      "error": null
+    }
+  }
+}

@@ -74,7 +74,10 @@ class ExtractedLabel(BaseModel):
         description="Country as literally stated on the label (e.g., 'Product of <Country>', 'Distilled and bottled in <Country>'). Null if no country is stated. Required when is_imported is true."
     )
     government_warning_text: str | None = Field(
-        description="Full literal text of the Government Warning statement on the back, preserving case and punctuation. It should begin with 'GOVERNMENT WARNING:'. Null if missing or unreadable."
+        description="STRICT: Verbatim transcription of the Government Warning as printed, preserving EXACT case, punctuation, and clause order. Do NOT recase to mixed case from training memory — if the label prints it in ALL CAPS (the regulatory norm), return ALL CAPS. Must begin with 'GOVERNMENT WARNING:'. Null only if missing or unreadable."
+    )
+    government_warning_bold: bool | None = Field(
+        description="True if the 'GOVERNMENT WARNING:' header (at minimum) is printed in bold typeface on the label. False if printed in regular weight. Null if you cannot tell from the image."
     )
 
 
@@ -105,8 +108,9 @@ Output sequence — the schema requires this order:
 transcriptions of all visible text on each label. This is your reading pass.
 
   2. Then populate every structured field using ONLY information that \
-appears in your transcriptions above. If a value is not present in your \
-transcription, it must be null (or false for is_imported).
+appears in EITHER transcription above (front or back — most fields can \
+live on either label; search both). If a value is not present in your \
+transcriptions, it must be null (or false for is_imported).
 
 Field rules:
 
@@ -128,8 +132,18 @@ domestic product with foreign sourcing.
 - country_of_origin: Capture what the label literally states. Null if no \
 country is stated.
 
-- government_warning_text: Verbatim from your back-label transcription. \
-Should begin with 'GOVERNMENT WARNING:'. Null if missing or unreadable.
+- government_warning_text: Verbatim from whichever transcription \
+contains it (almost always back, but check both), preserving the EXACT \
+case the label uses. Do not recase to mixed case from training memory; \
+if the label prints the warning in ALL CAPS (the regulatory norm), the \
+value must be ALL CAPS. Must begin with 'GOVERNMENT WARNING:'. Preserve \
+EVERY comma and period exactly as printed, INCLUDING those at \
+end-of-line positions — a comma at the end of a wrapped line is the \
+single most-dropped character. Null only if missing or unreadable.
+
+- government_warning_bold: True if the 'GOVERNMENT WARNING:' header is \
+printed in bold typeface on the label. False if regular weight. Null if \
+you cannot tell from the image. Bold is regulatorily required.
 """
 
 
@@ -178,7 +192,7 @@ def extract(
         ],
         response_format=ExtractedLabel,
         temperature=temperature,
-        max_tokens=4096,
+        max_tokens=16384,
     )
     latency_ms = (time.perf_counter() - start) * 1000
 
