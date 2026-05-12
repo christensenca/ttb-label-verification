@@ -22,7 +22,9 @@ from pipeline.normalize import (
     expand_state_abbrev,
     fuzzy_ratio,
     norm_text,
+    normalize_country_origin,
     normalize_warning_text,
+    parse_alcohol_content,
     parse_net_contents,
     strip_country_suffix,
 )
@@ -76,9 +78,7 @@ def compare(extracted: dict, expected: dict) -> dict:
 
     out: dict[str, dict] = {}
     out["brand"] = _fuzzy_text_field(extracted.get("brand"), expected.get("brand"))
-    out["class_type"] = _fuzzy_text_field(
-        extracted.get("class_type"), expected.get("class_type")
-    )
+    out["class_type"] = _fuzzy_text_field(extracted.get("class_type"), expected.get("class_type"))
     out["alcohol_content"] = _abv_field(
         extracted.get("alcohol_content"), expected.get("alcohol_content")
     )
@@ -149,10 +149,10 @@ def _abv_field(extracted, expected) -> dict:
         return _entry(True, extracted, expected, "both null")
     if extracted is None or expected is None:
         return _entry(False, extracted, expected, "missing value on one side")
-    try:
-        a, b = float(extracted), float(expected)
-    except (TypeError, ValueError):
-        return _entry(False, extracted, expected, "non-numeric value")
+    a = parse_alcohol_content(extracted)
+    b = parse_alcohol_content(expected)
+    if a is None or b is None:
+        return _entry(False, extracted, expected, "unparseable alcohol content")
     diff = abs(a - b)
     matched = diff <= ABV_TOLERANCE
     reason = (
@@ -208,7 +208,9 @@ def _import_pair(ext_imp, ext_country, exp_imp, exp_country) -> tuple[dict, dict
             # Per the project spec this is acceptable: domestic bottles
             # legitimately print "USA". Treat as a soft pass.
             country_entry = _entry(
-                True, ext_country, exp_country,
+                True,
+                ext_country,
+                exp_country,
                 "extracted country tolerated on domestic bottle",
             )
         else:
@@ -216,7 +218,9 @@ def _import_pair(ext_imp, ext_country, exp_imp, exp_country) -> tuple[dict, dict
     else:
         if ext_country is None or exp_country is None:
             country_entry = _entry(
-                False, ext_country, exp_country,
+                False,
+                ext_country,
+                exp_country,
                 "country_of_origin required when is_imported is true",
             )
         else:
@@ -225,11 +229,13 @@ def _import_pair(ext_imp, ext_country, exp_imp, exp_country) -> tuple[dict, dict
 
 
 def _country_match(extracted, expected) -> dict:
-    a, b = norm_text(extracted), norm_text(expected)
+    a, b = normalize_country_origin(extracted), normalize_country_origin(expected)
     matched = a == b
     return _entry(
-        matched, extracted, expected,
-        "exact match after normalize" if matched else "country mismatch",
+        matched,
+        extracted,
+        expected,
+        "exact match after country normalize" if matched else "country mismatch",
     )
 
 
@@ -254,24 +260,32 @@ def _warning_field(extracted, bold) -> dict:
     norm = normalize_warning_text(extracted)
     if not norm.startswith("GOVERNMENT WARNING:"):
         return _entry(
-            False, extracted, CANONICAL_WARNING,
+            False,
+            extracted,
+            CANONICAL_WARNING,
             "must begin with 'GOVERNMENT WARNING:' in all caps",
         )
     canonical = normalize_warning_text(CANONICAL_WARNING)
     text_ok = norm.casefold() == canonical.casefold()
     if not text_ok:
         return _entry(
-            False, extracted, CANONICAL_WARNING,
+            False,
+            extracted,
+            CANONICAL_WARNING,
             "text differs from TTB canonical warning",
         )
     if bold is False:
         return _entry(
-            False, extracted, CANONICAL_WARNING,
+            False,
+            extracted,
+            CANONICAL_WARNING,
             "text matches but warning header is not bold",
         )
     bold_note = "bold confirmed" if bold is True else "bold unverified"
     return _entry(
-        True, extracted, CANONICAL_WARNING,
+        True,
+        extracted,
+        CANONICAL_WARNING,
         f"exact match to TTB canonical ({bold_note})",
     )
 

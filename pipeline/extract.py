@@ -3,15 +3,13 @@
 Single structured-output call per label via OpenAI vision through OpenRouter.
 See decision #2 in docs/architecture-decisions.md.
 
-Anti-hallucination strategy: the schema requires the model to populate
-verbatim transcriptions of both labels BEFORE extracting structured fields.
-That grounds the structured output in text the model has explicitly committed
-to seeing, rather than letting it pattern-complete from its training corpus.
+This experimental extractor asks the model for the target fields directly
+instead of requiring full front/back transcriptions first. Each raw text field
+comes back with a readability confidence, then a tiny adapter unwraps the
+response into the existing flat label shape used by the comparator.
 
-The schema mirrors the expected-values JSON in test_data/expected/, plus
-the two transcription fields and `government_warning_text` (always required
-for alcohol, validated separately by the comparator against the canonical
-TTB warning text).
+Extraction deliberately does not normalize, parse, fuzzy-match, or compare
+values. Those concerns stay in ``pipeline.normalize`` and ``pipeline.compare``.
 """
 
 from __future__ import annotations
@@ -22,62 +20,116 @@ import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from openai import OpenAI
 from PIL import Image
 from pydantic import BaseModel, Field
 
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
-DEFAULT_MODEL = "openai/gpt-4o"
+DEFAULT_MODEL = "google/gemini-3.1-flash-lite"
 DEFAULT_IMAGE_LONG_SIDE = 1536  # Currently-checked-in composites are this size.
+
+ExtractionConfidence = Literal["low", "med", "hi"]
+
+
+class FieldExtraction(BaseModel):
+    """One directly-extracted raw text field plus source readability."""
+
+    value: str | None = Field(
+        description=(
+            "Raw visible text for this field exactly as printed. Null when the "
+            "field is not visible, unreadable, or absent."
+        )
+    )
+    extraction_confidence: ExtractionConfidence = Field(
+        description=(
+            "Readability confidence only: low for blurry/partial/glare-obscured "
+            "text, med for readable but stylized or low-contrast text, hi for "
+            "clean and unambiguous print."
+        )
+    )
+
+
+class OneShotExtractedLabel(BaseModel):
+    """Direct model response for one-shot extraction.
+
+    Text-like values are wrapped with readability confidence. Simple booleans
+    stay simple so the adapter does not invent confidence for non-text fields.
+    """
+
+    brand: FieldExtraction = Field(description="Brand name as it appears on the label.")
+    class_type: FieldExtraction = Field(
+        description="Class/type designation as it appears on the label."
+    )
+    alcohol_content: FieldExtraction = Field(
+        description=(
+            "Full visible alcohol-content statement exactly as printed, including "
+            "tokens such as 'ALC.', 'Alcohol', '%', 'BY VOL.', or 'by volume'. "
+            "Do not return only the numeric percentage when more text is visible."
+        )
+    )
+    net_contents: FieldExtraction = Field(
+        description="Net contents as shown on the label, including units."
+    )
+    producer_name: FieldExtraction = Field(
+        description=(
+            "Regulatory responsible-party name as printed. For imported products, "
+            "use the US importer named in the 'Imported by' statement, not the "
+            "foreign producer or bottler."
+        )
+    )
+    producer_address: FieldExtraction = Field(
+        description=(
+            "Regulatory responsible-party address as printed. For imported products, "
+            "use the US importer city/state from the 'Imported by' statement."
+        )
+    )
+    is_imported: bool | None = Field(
+        description=(
+            "True if the visible label says 'Imported by' or equivalent import "
+            "language. False if visible text makes it domestic. Null if not visible "
+            "or unclear."
+        )
+    )
+    country_of_origin: FieldExtraction = Field(
+        description=(
+            "Country of origin text as printed, such as 'Product of Mexico' or "
+            "'Scotland'. Null when no country-of-origin text is visible."
+        )
+    )
+    government_warning_text: FieldExtraction = Field(
+        description=(
+            "Visible Government Warning text exactly as printed. Null if the "
+            "warning is not visible or unreadable."
+        )
+    )
+    government_warning_bold: bool | None = Field(
+        description=(
+            "True if the 'GOVERNMENT WARNING:' header appears bold, false if it "
+            "appears regular weight, null if the image is not clear enough to tell."
+        )
+    )
 
 
 class ExtractedLabel(BaseModel):
-    """Structured fields extracted from a TTB alcohol label.
+    """Flat extracted fields consumed by comparison and benchmarks."""
 
-    Field order matters: structured output is generated token-by-token, so
-    putting the two transcription fields first forces the model to commit
-    to a transcription before extracting fields from it.
-    """
-
-    # ----- Transcription (anti-hallucination "show your work") -----
-    front_label_text: str = Field(
-        description="Verbatim transcription of ALL visible text on the FRONT label, preserving case and line order as best you can. Include every word you can read. This is the source of truth for the structured fields below."
-    )
-    back_label_text: str = Field(
-        description="Verbatim transcription of ALL visible text on the BACK label, preserving case and line order as best you can. Include every word you can read. This is the source of truth for the structured fields below."
-    )
-
-    # ----- Structured fields extracted from the transcription above -----
-    brand: str | None = Field(
-        description="Brand name as printed — the most prominent product-line identifier. Do not append the class/type unless it visibly appears as part of the brand logo."
-    )
-    class_type: str | None = Field(
-        description="Class/type designation as printed (the kind of spirit: bourbon, gin, vodka, tequila, rye whiskey, etc.). Use wording from the transcription."
-    )
-    alcohol_content: float | None = Field(
-        description="ABV as shown on the label, as a number between 0 and 100 (e.g., 40.0 for '40% Alc./Vol.'). Do NOT convert proof to ABV. If only proof is shown without an explicit ABV percentage, return null."
-    )
-    net_contents: str | None = Field(
-        description="As shown on the label including the unit (e.g., '750 mL', '1 L'). Preserve label formatting."
-    )
-    producer_name: str | None = Field(
-        description="Company responsible for the product, taken verbatim from the transcription. For imported products, this is the importer named on the 'Imported by ...' line — NOT the foreign bottler. For domestic, the distillery or bottler. Strip preposition words ('Distilled by', 'Imported by', etc.); keep corporate suffixes (Inc., Co., LLC)."
-    )
+    brand: str | None = Field(description="Brand name as printed.")
+    class_type: str | None = Field(description="Class/type designation as printed.")
+    alcohol_content: str | float | None = Field(description="Alcohol-content statement as printed.")
+    net_contents: str | None = Field(description="Net contents as printed.")
+    producer_name: str | None = Field(description="Regulatory responsible-party name as printed.")
     producer_address: str | None = Field(
-        description="City and state/region of the producer, quoted verbatim from the transcription. For imported products, use the US address from the 'Imported by ...' line. Strip trailing country codes — those belong in country_of_origin if applicable."
+        description="Regulatory responsible-party address as printed."
     )
     is_imported: bool | None = Field(
-        description="True ONLY when the transcription contains the words 'Imported by'. A foreign country mentioned in a production statement does NOT qualify if a US bottler/producer is also named."
+        description="Whether the visible label identifies an importer."
     )
-    country_of_origin: str | None = Field(
-        description="Country as literally stated on the label (e.g., 'Product of <Country>', 'Distilled and bottled in <Country>'). Null if no country is stated. Required when is_imported is true."
-    )
-    government_warning_text: str | None = Field(
-        description="STRICT: Verbatim transcription of the Government Warning as printed, preserving EXACT case, punctuation, and clause order. Do NOT recase to mixed case from training memory — if the label prints it in ALL CAPS (the regulatory norm), return ALL CAPS. Must begin with 'GOVERNMENT WARNING:'. Null only if missing or unreadable."
-    )
+    country_of_origin: str | None = Field(description="Country-of-origin text as printed.")
+    government_warning_text: str | None = Field(description="Government Warning text as printed.")
     government_warning_bold: bool | None = Field(
-        description="True if the 'GOVERNMENT WARNING:' header (at minimum) is printed in bold typeface on the label. False if printed in regular weight. Null if you cannot tell from the image."
+        description="Whether the Government Warning header appears bold."
     )
 
 
@@ -90,61 +142,84 @@ class ExtractionResult:
     input_tokens: int
     output_tokens: int
     model: str
+    field_confidence: dict[str, ExtractionConfidence]
 
 
 SYSTEM_PROMPT = """\
 You are extracting TTB-required label information from a photograph of an \
-alcohol beverage bottle. The image shows the FRONT label (left half) and \
-BACK label (right half) of the same bottle, concatenated side-by-side.
+alcohol beverage bottle. The image may show the front panel, the back panel, \
+or a side-by-side/stacked composite of multiple panels.
 
 CRITICAL: Read ONLY what is visible and legible on the labels in this \
 specific image. Do NOT infer, guess, or apply outside knowledge about any \
 brand or product. Inventing or recalling information you have seen elsewhere \
-is a critical failure. If a field is not clearly readable, return null.
-
-Output sequence — the schema requires this order:
-
-  1. First, populate `front_label_text` and `back_label_text` with verbatim \
-transcriptions of all visible text on each label. This is your reading pass.
-
-  2. Then populate every structured field using ONLY information that \
-appears in EITHER transcription above (front or back — most fields can \
-live on either label; search both). If a value is not present in your \
-transcriptions, it must be null (or false for is_imported).
+is a critical failure. If a field is not visible or not clearly readable, \
+return null for that field's value.
 
 Field rules:
 
-- alcohol_content: ABV as a percent number between 0 and 100 (e.g., 40.0 \
-for '40% Alc./Vol.'). DO NOT convert proof to ABV. If only proof is shown \
-without an explicit ABV percentage, return null.
+- For wrapped text fields, return the raw visible text exactly as printed. \
+Preserve tokens, punctuation, case, and line-order as well as the image allows. \
+Do not normalize, title-case, expand abbreviations, parse units, or compare \
+values to expected regulatory text.
 
-- producer_name and producer_address: Take these verbatim from the \
-transcription. For imported products, the relevant entity is the US \
-importer named on the line beginning with 'Imported by ...' — \
-even if a foreign bottler is also listed prominently. Strip preposition \
-words ('Distilled by', 'Imported by', etc.); keep corporate suffixes.
+- extraction_confidence: This is source readability only. Use "low" for \
+blurry, partial, glare-obscured, or hard-to-read text; "med" for readable \
+but stylized or low-contrast text; "hi" for clean print that is unambiguous.
 
-- is_imported: True only when 'Imported by' appears in the transcription. \
-A foreign country in a production statement (e.g., 'Distilled in <Country>') \
-alone is NOT sufficient if a US bottler/producer is also named — that is a \
-domestic product with foreign sourcing.
+- alcohol_content: Return the full visible alcohol-content statement. If the \
+label says "ALC. 40% BY VOL.", "40% Alc./Vol.", or "Alcohol 40% by volume", \
+return the whole visible phrase, not just "40" or "40%". Do NOT convert proof \
+to ABV.
 
-- country_of_origin: Capture what the label literally states. Null if no \
-country is stated.
+- producer_name and producer_address: Extract the mandatory regulatory \
+name/address statement for the product. For imported spirits, prefer the US \
+"Imported by" name and city/state over any foreign "Bottled by", "Distilled \
+by", or producer statement. For domestic products, use the visible bottler, \
+distiller, or processor name/address statement. Keep wording as printed; do \
+not strip or rewrite prepositions.
 
-- government_warning_text: Verbatim from whichever transcription \
-contains it (almost always back, but check both), preserving the EXACT \
-case the label uses. Do not recase to mixed case from training memory; \
-if the label prints the warning in ALL CAPS (the regulatory norm), the \
-value must be ALL CAPS. Must begin with 'GOVERNMENT WARNING:'. Preserve \
-EVERY comma and period exactly as printed, INCLUDING those at \
-end-of-line positions — a comma at the end of a wrapped line is the \
-single most-dropped character. Null only if missing or unreadable.
+- is_imported: True only when visible label text says "Imported by" or \
+equivalent import language. False when visible text clearly identifies a \
+domestic producer/bottler without import language. Null if unclear.
+
+- country_of_origin: Return the visible country-of-origin wording as printed. \
+Null if no country-of-origin text is visible.
+
+- government_warning_text: Return only the visible Government Warning text \
+exactly as printed. If the back panel or warning block is not visible, this \
+field must be null. Do not fill in the standard warning from memory.
 
 - government_warning_bold: True if the 'GOVERNMENT WARNING:' header is \
 printed in bold typeface on the label. False if regular weight. Null if \
-you cannot tell from the image. Bold is regulatorily required.
+you cannot tell from the image.
 """
+
+
+WRAPPED_FIELDS = (
+    "brand",
+    "class_type",
+    "alcohol_content",
+    "net_contents",
+    "producer_name",
+    "producer_address",
+    "country_of_origin",
+    "government_warning_text",
+)
+
+
+def unwrap_one_shot_label(
+    one_shot: OneShotExtractedLabel,
+) -> tuple[ExtractedLabel, dict[str, ExtractionConfidence]]:
+    """Adapt one-shot field wrappers into the existing flat label shape."""
+    flat = {name: getattr(one_shot, name).value for name in WRAPPED_FIELDS}
+    confidence = {name: getattr(one_shot, name).extraction_confidence for name in WRAPPED_FIELDS}
+    label = ExtractedLabel(
+        **flat,
+        is_imported=one_shot.is_imported,
+        government_warning_bold=one_shot.government_warning_bold,
+    )
+    return label, confidence
 
 
 def extract(
@@ -190,16 +265,17 @@ def extract(
                 ],
             },
         ],
-        response_format=ExtractedLabel,
+        response_format=OneShotExtractedLabel,
         temperature=temperature,
-        max_tokens=16384,
+        max_tokens=8192,
     )
     latency_ms = (time.perf_counter() - start) * 1000
 
-    parsed = response.choices[0].message.parsed
-    if parsed is None:
+    parsed_one_shot = response.choices[0].message.parsed
+    if parsed_one_shot is None:
         raw = response.choices[0].message.content
         raise RuntimeError(f"Model returned no parsed output. Raw content: {raw!r}")
+    parsed, field_confidence = unwrap_one_shot_label(parsed_one_shot)
 
     usage = response.usage
     return ExtractionResult(
@@ -208,6 +284,7 @@ def extract(
         input_tokens=usage.prompt_tokens if usage else 0,
         output_tokens=usage.completion_tokens if usage else 0,
         model=model,
+        field_confidence=field_confidence,
     )
 
 
@@ -269,3 +346,5 @@ if __name__ == "__main__":
     print(f"tokens:      {result.input_tokens} in / {result.output_tokens} out")
     print()
     print(json.dumps(result.label.model_dump(), indent=2))
+    print()
+    print(json.dumps({"field_confidence": result.field_confidence}, indent=2))

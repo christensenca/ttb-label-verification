@@ -53,9 +53,7 @@ def test_aggregate_accuracy_above_baseline(extractions, expected_for):
     # v1 baseline was 44/56 = 78.6%. compare() reclaims the formatting
     # drift cases and lands at 49/56 = 87.5%. Floor at 85% catches
     # comparator regressions without needing the LLM rerun to hit 90%+.
-    assert accuracy >= 0.85, (
-        f"Aggregate accuracy regressed: {correct}/{total} = {accuracy:.1%}"
-    )
+    assert accuracy >= 0.85, f"Aggregate accuracy regressed: {correct}/{total} = {accuracy:.1%}"
 
 
 def test_warning_strict_rule_catches_real_deviations(extractions, expected_for):

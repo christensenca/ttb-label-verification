@@ -42,9 +42,9 @@ def _base():
         ("STONE'S THROW", "Stone's Throw", True),
         ("WILLIAM GRANT & SONS, INC.", "William Grant and Sons Inc.", True),
         ("The Maker's Mark Distillery Inc.", "Maker's Mark Distillery Inc.", True),
-        ("Hendrick's", "Hendrick's Gin", False),       # true partial extraction
-        ("Tito's", "Tito's Handmade Vodka", False),    # true partial extraction
-        ("GRAY WHALE", "Gray Whale Gin", False),       # true partial extraction
+        ("Hendrick's", "Hendrick's Gin", False),  # true partial extraction
+        ("Tito's", "Tito's Handmade Vodka", False),  # true partial extraction
+        ("GRAY WHALE", "Gray Whale Gin", False),  # true partial extraction
     ],
 )
 def test_brand_fuzzy(extracted, expected, matched):
@@ -97,6 +97,10 @@ def test_net_contents(extracted, expected, matched):
         (40.0, 40.0, True),
         (40.05, 40.0, True),
         (48.28, 48.28, True),
+        ("40% Alc./Vol.", 40.0, True),
+        ("ALC. 45% BY VOL.", 45.0, True),
+        ("Alcohol 44% by volume", 44.0, True),
+        ("80 proof", 40.0, False),
         (40.2, 40.0, False),
         (None, 40.0, False),
         (40.0, None, False),
@@ -121,7 +125,7 @@ def test_alcohol_content(extracted, expected, matched):
         ("Austin, Texas", "Austin, TX", True),
         ("Versailles, Kentucky USA", "Versailles, Kentucky", True),
         ("Star Hill Farm, Loretto, KY", "Star Hill Farm, Loretto, KY", True),
-        ("Loretto, KY", "Star Hill Farm, Loretto, KY", False),   # true info loss
+        ("Loretto, KY", "Star Hill Farm, Loretto, KY", False),  # true info loss
         # parris/parlier is a genuine OCR substitution, but token_sort
         # ratio of two short typo-distant strings lands ~90, above the
         # fuzzy threshold. Accepting this as the cost of fuzzy matching;
@@ -143,6 +147,12 @@ def test_imported_with_country_match():
     # standard "Don Julio is imported from Mexico" case
     assert compare(_base(), _base())["country_of_origin"]["matched"] is True
     assert compare(_base(), _base())["is_imported"]["matched"] is True
+
+
+def test_imported_country_origin_phrase_matches_country_value():
+    ext = _base() | {"country_of_origin": "PRODUCT OF MEXICO"}
+    out = compare(ext, _base())
+    assert out["country_of_origin"]["matched"] is True
 
 
 def test_imported_missing_country_extracted():
@@ -253,9 +263,15 @@ def test_warning_whitespace_collapses():
 def test_returns_all_fields():
     out = compare(_base(), _base())
     expected_keys = {
-        "brand", "class_type", "alcohol_content", "net_contents",
-        "producer_name", "producer_address", "is_imported",
-        "country_of_origin", "government_warning_text",
+        "brand",
+        "class_type",
+        "alcohol_content",
+        "net_contents",
+        "producer_name",
+        "producer_address",
+        "is_imported",
+        "country_of_origin",
+        "government_warning_text",
     }
     assert set(out.keys()) == expected_keys
 

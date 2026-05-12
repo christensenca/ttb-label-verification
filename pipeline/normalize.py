@@ -29,62 +29,117 @@ from rapidfuzz import fuzz
 # canonical form (lowercased full name) so "TX" and "Texas" both collapse to
 # "texas" inside norm_text.
 _STATES: dict[str, str] = {
-    "alabama": "alabama", "al": "alabama",
-    "alaska": "alaska", "ak": "alaska",
-    "arizona": "arizona", "az": "arizona",
-    "arkansas": "arkansas", "ar": "arkansas",
-    "california": "california", "ca": "california",
-    "colorado": "colorado", "co": "colorado",
-    "connecticut": "connecticut", "ct": "connecticut",
-    "delaware": "delaware", "de": "delaware",
-    "florida": "florida", "fl": "florida",
-    "georgia": "georgia", "ga": "georgia",
-    "hawaii": "hawaii", "hi": "hawaii",
-    "idaho": "idaho", "id": "idaho",
-    "illinois": "illinois", "il": "illinois",
-    "indiana": "indiana", "in": "indiana",
-    "iowa": "iowa", "ia": "iowa",
-    "kansas": "kansas", "ks": "kansas",
-    "kentucky": "kentucky", "ky": "kentucky",
-    "louisiana": "louisiana", "la": "louisiana",
-    "maine": "maine", "me": "maine",
-    "maryland": "maryland", "md": "maryland",
-    "massachusetts": "massachusetts", "ma": "massachusetts",
-    "michigan": "michigan", "mi": "michigan",
-    "minnesota": "minnesota", "mn": "minnesota",
-    "mississippi": "mississippi", "ms": "mississippi",
-    "missouri": "missouri", "mo": "missouri",
-    "montana": "montana", "mt": "montana",
-    "nebraska": "nebraska", "ne": "nebraska",
-    "nevada": "nevada", "nv": "nevada",
-    "new hampshire": "new hampshire", "nh": "new hampshire",
-    "new jersey": "new jersey", "nj": "new jersey",
-    "new mexico": "new mexico", "nm": "new mexico",
-    "new york": "new york", "ny": "new york",
-    "north carolina": "north carolina", "nc": "north carolina",
-    "north dakota": "north dakota", "nd": "north dakota",
-    "ohio": "ohio", "oh": "ohio",
-    "oklahoma": "oklahoma", "ok": "oklahoma",
-    "oregon": "oregon", "or": "oregon",
-    "pennsylvania": "pennsylvania", "pa": "pennsylvania",
-    "rhode island": "rhode island", "ri": "rhode island",
-    "south carolina": "south carolina", "sc": "south carolina",
-    "south dakota": "south dakota", "sd": "south dakota",
-    "tennessee": "tennessee", "tn": "tennessee",
-    "texas": "texas", "tx": "texas",
-    "utah": "utah", "ut": "utah",
-    "vermont": "vermont", "vt": "vermont",
-    "virginia": "virginia", "va": "virginia",
-    "washington": "washington", "wa": "washington",
-    "west virginia": "west virginia", "wv": "west virginia",
-    "wisconsin": "wisconsin", "wi": "wisconsin",
-    "wyoming": "wyoming", "wy": "wyoming",
+    "alabama": "alabama",
+    "al": "alabama",
+    "alaska": "alaska",
+    "ak": "alaska",
+    "arizona": "arizona",
+    "az": "arizona",
+    "arkansas": "arkansas",
+    "ar": "arkansas",
+    "california": "california",
+    "ca": "california",
+    "colorado": "colorado",
+    "co": "colorado",
+    "connecticut": "connecticut",
+    "ct": "connecticut",
+    "delaware": "delaware",
+    "de": "delaware",
+    "florida": "florida",
+    "fl": "florida",
+    "georgia": "georgia",
+    "ga": "georgia",
+    "hawaii": "hawaii",
+    "hi": "hawaii",
+    "idaho": "idaho",
+    "id": "idaho",
+    "illinois": "illinois",
+    "il": "illinois",
+    "indiana": "indiana",
+    "in": "indiana",
+    "iowa": "iowa",
+    "ia": "iowa",
+    "kansas": "kansas",
+    "ks": "kansas",
+    "kentucky": "kentucky",
+    "ky": "kentucky",
+    "louisiana": "louisiana",
+    "la": "louisiana",
+    "maine": "maine",
+    "me": "maine",
+    "maryland": "maryland",
+    "md": "maryland",
+    "massachusetts": "massachusetts",
+    "ma": "massachusetts",
+    "michigan": "michigan",
+    "mi": "michigan",
+    "minnesota": "minnesota",
+    "mn": "minnesota",
+    "mississippi": "mississippi",
+    "ms": "mississippi",
+    "missouri": "missouri",
+    "mo": "missouri",
+    "montana": "montana",
+    "mt": "montana",
+    "nebraska": "nebraska",
+    "ne": "nebraska",
+    "nevada": "nevada",
+    "nv": "nevada",
+    "new hampshire": "new hampshire",
+    "nh": "new hampshire",
+    "new jersey": "new jersey",
+    "nj": "new jersey",
+    "new mexico": "new mexico",
+    "nm": "new mexico",
+    "new york": "new york",
+    "ny": "new york",
+    "north carolina": "north carolina",
+    "nc": "north carolina",
+    "north dakota": "north dakota",
+    "nd": "north dakota",
+    "ohio": "ohio",
+    "oh": "ohio",
+    "oklahoma": "oklahoma",
+    "ok": "oklahoma",
+    "oregon": "oregon",
+    "or": "oregon",
+    "pennsylvania": "pennsylvania",
+    "pa": "pennsylvania",
+    "rhode island": "rhode island",
+    "ri": "rhode island",
+    "south carolina": "south carolina",
+    "sc": "south carolina",
+    "south dakota": "south dakota",
+    "sd": "south dakota",
+    "tennessee": "tennessee",
+    "tn": "tennessee",
+    "texas": "texas",
+    "tx": "texas",
+    "utah": "utah",
+    "ut": "utah",
+    "vermont": "vermont",
+    "vt": "vermont",
+    "virginia": "virginia",
+    "va": "virginia",
+    "washington": "washington",
+    "wa": "washington",
+    "west virginia": "west virginia",
+    "wv": "west virginia",
+    "wisconsin": "wisconsin",
+    "wi": "wisconsin",
+    "wyoming": "wyoming",
+    "wy": "wyoming",
 }
 
 _COUNTRY_SUFFIXES = (
-    "u.s.a.", "u.s.a", "usa",
-    "united states of america", "united states",
-    "u.k.", "uk", "united kingdom",
+    "u.s.a.",
+    "u.s.a",
+    "usa",
+    "united states of america",
+    "united states",
+    "u.k.",
+    "uk",
+    "united kingdom",
 )
 
 _CORP_SUFFIXES_KEEP_UPPER = {"LLC", "LLP", "LP", "PLC", "PBC", "USA", "UK"}
@@ -153,6 +208,23 @@ def strip_country_suffix(s: str) -> str:
     return out.strip()
 
 
+def normalize_country_origin(s: str | None) -> str:
+    """Normalize country-of-origin phrases to a country value for comparison."""
+    out = norm_text(s)
+    prefixes = (
+        "product of ",
+        "produced in ",
+        "made in ",
+        "distilled in ",
+        "bottled in ",
+        "distilled and bottled in ",
+    )
+    for prefix in sorted(prefixes, key=len, reverse=True):
+        if out.startswith(prefix):
+            return out[len(prefix) :].strip()
+    return out
+
+
 def parse_net_contents(s: str | None) -> float | None:
     """Parse a net-contents string into milliliters.
 
@@ -171,6 +243,41 @@ def parse_net_contents(s: str | None) -> float | None:
     if unit == "cl":
         return value * 10.0
     return value * 1000.0  # litres
+
+
+def parse_alcohol_content(value) -> float | None:
+    """Parse an alcohol-content extraction into ABV percentage points.
+
+    Accepts numeric values from the older extractor and raw one-shot strings
+    such as "40% Alc./Vol.", "ALC. 45% BY VOL.", "Alcohol 44% by volume",
+    and "48.28 ALC/VOL". Deliberately does not convert proof to ABV; proof-only
+    strings return None so extraction/comparison can surface the missing ABV.
+    """
+    if value is None:
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    if not isinstance(value, str):
+        return None
+
+    s = value.strip()
+    if not s:
+        return None
+
+    percent = r"(\d+(?:\.\d+)?)\s*%"
+    alc_words = r"(?:alc\.?|alcohol)"
+    vol_words = r"(?:vol\.?|volume)"
+    patterns = (
+        rf"{alc_words}\s*{percent}.*?(?:by\s*)?{vol_words}",
+        rf"{percent}\s*{alc_words}.*?{vol_words}",
+        rf"{percent}.*?(?:by\s*)?{vol_words}",
+        rf"(\d+(?:\.\d+)?)\s*{alc_words}\s*/?\s*{vol_words}",
+    )
+    for pattern in patterns:
+        m = re.search(pattern, s, re.IGNORECASE)
+        if m:
+            return float(m.group(1))
+    return None
 
 
 def fuzzy_ratio(a: str, b: str) -> float:
@@ -218,7 +325,7 @@ def _smart_title(s: str) -> str:
     out: list[str] = []
     for i, tok in enumerate(tokens):
         bare = tok.rstrip(".,")
-        trail = tok[len(bare):]
+        trail = tok[len(bare) :]
         upper = bare.upper()
         if upper in _CORP_SUFFIXES_KEEP_UPPER:
             out.append(upper + trail)
@@ -259,10 +366,14 @@ def normalize_warning_text(s: str) -> str:
         return ""
     out = s.replace("\r\n", "\n").replace("\r", "\n")
     out = out.replace(" ", " ")
-    out = (out
-           .replace("‘", "'").replace("’", "'")
-           .replace("“", '"').replace("”", '"')
-           .replace("`", "'").replace("´", "'"))
+    out = (
+        out.replace("‘", "'")
+        .replace("’", "'")
+        .replace("“", '"')
+        .replace("”", '"')
+        .replace("`", "'")
+        .replace("´", "'")
+    )
     out = re.sub(r"\*\*(.+?)\*\*", r"\1", out, flags=re.DOTALL)
     out = re.sub(r"__(.+?)__", r"\1", out, flags=re.DOTALL)
     out = re.sub(r"(?<!_)_([^_\n]+)_(?!_)", r"\1", out)

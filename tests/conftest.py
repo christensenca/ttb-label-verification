@@ -16,7 +16,7 @@ EXPECTED_DIR = REPO / "test_data" / "expected"
 def extractions() -> dict:
     """Cached extraction outputs, shape::
 
-        { bottle: { model: { "label": {...}, "latency_ms": ..., "error": ... } } }
+    { bottle: { model: { "label": {...}, "latency_ms": ..., "error": ... } } }
     """
     return json.loads(FIXTURE.read_text())
 

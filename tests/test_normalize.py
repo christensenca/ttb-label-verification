@@ -10,7 +10,9 @@ from pipeline.normalize import (
     expand_state_abbrev,
     fuzzy_ratio,
     norm_text,
+    normalize_country_origin,
     normalize_warning_text,
+    parse_alcohol_content,
     parse_net_contents,
     strip_country_suffix,
 )
@@ -63,6 +65,21 @@ class TestStripCountrySuffix:
         assert strip_country_suffix(raw) == want
 
 
+class TestNormalizeCountryOrigin:
+    @pytest.mark.parametrize(
+        "raw, want",
+        [
+            ("Mexico", "mexico"),
+            ("PRODUCT OF MEXICO", "mexico"),
+            ("Product of Scotland", "scotland"),
+            ("Distilled and bottled in Scotland", "scotland"),
+            (None, ""),
+        ],
+    )
+    def test_normalize(self, raw, want):
+        assert normalize_country_origin(raw) == want
+
+
 class TestParseNetContents:
     @pytest.mark.parametrize(
         "raw, want_ml",
@@ -83,6 +100,24 @@ class TestParseNetContents:
         assert parse_net_contents(raw) == want_ml
 
 
+class TestParseAlcoholContent:
+    @pytest.mark.parametrize(
+        "raw, want_abv",
+        [
+            ("40% Alc./Vol.", 40.0),
+            ("ALC. 45% BY VOL.", 45.0),
+            ("Alcohol 44% by volume", 44.0),
+            ("48.28 ALC/VOL", 48.28),
+            (40.0, 40.0),
+            ("80 proof", None),
+            ("garbage", None),
+            (None, None),
+        ],
+    )
+    def test_parse(self, raw, want_abv):
+        assert parse_alcohol_content(raw) == want_abv
+
+
 class TestFuzzyRatio:
     def test_identical(self):
         assert fuzzy_ratio("hello world", "hello world") == 100.0
@@ -97,22 +132,16 @@ class TestFuzzyRatio:
 
 class TestApplyConsistencyRules:
     def test_imported_null_clears_country(self):
-        out = apply_consistency_rules(
-            {"is_imported": None, "country_of_origin": "Mexico"}
-        )
+        out = apply_consistency_rules({"is_imported": None, "country_of_origin": "Mexico"})
         assert out["country_of_origin"] is None
 
     def test_domestic_false_keeps_country(self):
         # Maker's Mark / Tito's / Woodford print "USA" legitimately.
-        out = apply_consistency_rules(
-            {"is_imported": False, "country_of_origin": "USA"}
-        )
+        out = apply_consistency_rules({"is_imported": False, "country_of_origin": "USA"})
         assert out["country_of_origin"] == "USA"
 
     def test_imported_true_keeps_country(self):
-        out = apply_consistency_rules(
-            {"is_imported": True, "country_of_origin": "Mexico"}
-        )
+        out = apply_consistency_rules({"is_imported": True, "country_of_origin": "Mexico"})
         assert out["country_of_origin"] == "Mexico"
 
     def test_returns_copy(self):

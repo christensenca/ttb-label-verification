@@ -26,8 +26,9 @@ from pipeline.extract import extract
 load_dotenv()
 
 MODELS = [
-    "openai/gpt-4o",                  # full, not mini — testing capability ceiling
-    "google/gemini-3.1-flash-lite",   # newer Gemini generation
+    "google/gemini-3.1-flash-lite",  # default one-shot extraction candidate
+    # Capability-ceiling comparisons:
+    # "openai/gpt-4o",
     # Previous bench set — restore for comparison:
     # "openai/gpt-4o-mini",
     # "google/gemini-2.5-flash",
@@ -52,9 +53,8 @@ REPORTS = REPO / "reports"
 
 
 def to_canonical(label: dict) -> dict:
-    """Strip extractor-internal fields (transcription scaffold) and keep
-    only what the comparator scores against ground truth."""
-    keys = list(SCORED_FIELDS) + ["government_warning_text"]
+    """Strip extractor-internal/debug fields before comparator scoring."""
+    keys = list(SCORED_FIELDS) + ["government_warning_text", "government_warning_bold"]
     return {k: label.get(k) for k in keys}
 
 
@@ -83,6 +83,7 @@ def run_live() -> dict:
                 r = extract(IMAGES / f"{bottle}.jpg", model=model)
                 results[bottle][model] = {
                     "label": r.label.model_dump(),
+                    "field_confidence": r.field_confidence,
                     "latency_ms": r.latency_ms,
                     "in_tok": r.input_tokens,
                     "out_tok": r.output_tokens,
@@ -161,6 +162,16 @@ def run() -> None:
 # -------- reporting --------
 
 
+def _confidence_summary(confidence: dict | None) -> str:
+    if not confidence:
+        return "—"
+    counts = {level: 0 for level in ("hi", "med", "low")}
+    for level in confidence.values():
+        if level in counts:
+            counts[level] += 1
+    return f"hi {counts['hi']} / med {counts['med']} / low {counts['low']}"
+
+
 def write_report(results: dict, path: Path) -> None:
     lines: list[str] = [
         "# Extraction benchmark\n",
@@ -169,9 +180,15 @@ def write_report(results: dict, path: Path) -> None:
 
     summary = {
         model: {
-            "correct": 0, "total": 0,
-            "warn_ok": 0, "warn_total": 0,
-            "lat": [], "in": [], "out": [], "err": 0,
+            "correct": 0,
+            "total": 0,
+            "warn_ok": 0,
+            "warn_total": 0,
+            "conf": {"hi": 0, "med": 0, "low": 0},
+            "lat": [],
+            "in": [],
+            "out": [],
+            "err": 0,
         }
         for model in MODELS
     }
@@ -195,13 +212,18 @@ def write_report(results: dict, path: Path) -> None:
             s["warn_total"] += 1
             if cmp["government_warning_text"]["matched"]:
                 s["warn_ok"] += 1
+            for level in res.get("field_confidence", {}).values():
+                if level in s["conf"]:
+                    s["conf"][level] += 1
             s["lat"].append(res["latency_ms"])
             s["in"].append(res["in_tok"])
             s["out"].append(res["out_tok"])
 
     lines.append("## Aggregate scores\n")
-    lines.append("| model | accuracy | warn | avg latency | avg tokens (in/out) | errors |")
-    lines.append("|---|---|---|---|---|---|")
+    lines.append(
+        "| model | accuracy | warn | avg latency | avg tokens (in/out) | confidence | errors |"
+    )
+    lines.append("|---|---|---|---|---|---|---|")
     for model in MODELS:
         s = summary[model]
         if s["total"] == 0:
@@ -212,10 +234,12 @@ def write_report(results: dict, path: Path) -> None:
         avg_lat = sum(s["lat"]) / len(s["lat"]) if s["lat"] else 0
         avg_in = int(sum(s["in"]) / len(s["in"])) if s["in"] else 0
         avg_out = int(sum(s["out"]) / len(s["out"])) if s["out"] else 0
+        conf = s["conf"]
         lines.append(
             f"| {short(model)} | {s['correct']}/{s['total']} ({acc:.0%}) "
             f"| {s['warn_ok']}/{s['warn_total']} ({warn_pct:.0%}) "
-            f"| {int(avg_lat)}ms | {avg_in}/{avg_out} | {s['err']} |"
+            f"| {int(avg_lat)}ms | {avg_in}/{avg_out} "
+            f"| hi {conf['hi']} / med {conf['med']} / low {conf['low']} | {s['err']} |"
         )
     lines.append("")
 
@@ -227,8 +251,10 @@ def write_report(results: dict, path: Path) -> None:
         lines.append(json.dumps(expected, indent=2))
         lines.append("```\n")
 
-        header = "| model | " + " | ".join(SCORED_FIELDS) + " | warn | score | latency |"
-        sep = "|" + "---|" * (len(SCORED_FIELDS) + 4)
+        header = (
+            "| model | " + " | ".join(SCORED_FIELDS) + " | warn | score | confidence | latency |"
+        )
+        sep = "|" + "---|" * (len(SCORED_FIELDS) + 5)
         lines.append(header)
         lines.append(sep)
 
@@ -251,12 +277,13 @@ def write_report(results: dict, path: Path) -> None:
                 val_str = str(val)[:30] if val is not None else "null"
                 glyph = "✓" if entry["matched"] else "✗"
                 reason = entry["reason"].replace("|", "/")
-                cells.append(f'{glyph} `{val_str}`<br><sub>{reason}</sub>')
+                cells.append(f"{glyph} `{val_str}`<br><sub>{reason}</sub>")
             warn_entry = cmp["government_warning_text"]
             warn_glyph = "✓" if warn_entry["matched"] else "✗"
             warn_reason = warn_entry["reason"].replace("|", "/")
             cells.append(f"{warn_glyph}<br><sub>{warn_reason}</sub>")
             cells.append(f"{ok_count}/{len(SCORED_FIELDS)}")
+            cells.append(_confidence_summary(res.get("field_confidence")))
             cells.append(f"{int(res['latency_ms'])}ms")
             lines.append(f"| {short(model)} | " + " | ".join(cells) + " |")
         lines.append("")
