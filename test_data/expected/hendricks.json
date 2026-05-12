@@ -1,0 +1,15 @@
+{
+  "image": "hendricks.jpg",
+  "tier": "real_photo",
+  "expected": {
+    "brand": "Hendrick's Gin",
+    "class_type": "Gin",
+    "alcohol_content": 44.0,
+    "net_contents": "750 mL",
+    "producer_name": "William Grant and Sons Inc.",
+    "producer_address": "New York, NY",
+    "is_imported": true,
+    "country_of_origin": "Scotland"
+  },
+  "notes": "Bottle lying at angle, dark glass + ornate label make text small. Front: 'HENDRICK'S GIN', 'Distilled and bottled in Scotland', 'Handcrafted', 'Small Batch', 'EST. 1886', '750 ML', '44% Alc. By Vol.', '88 PROOF'. Back: distilled from grain, 'Bottled by William Grant & Sons LTD, Scotland', 'Imported by William Grant and Sons Inc., New York NY', Government Warning visible."
+}

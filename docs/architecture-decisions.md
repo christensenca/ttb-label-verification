@@ -9,7 +9,23 @@ Decisions captured from the planning conversation. Builds on [interview-highligh
 **Why:** Mirrors the workflow Sarah described — "does what's on the label match what's in the application?" Anything less (label-only extraction, or AI compliance check without comparison) demonstrates a feature rather than the actual job.
 
 **Implications for the API contract:**
-- Underlying request shape: `{ image, expected: { brand, class_type, abv, net_contents, producer, country_of_origin, warning_required: true } }`
+- Underlying request shape:
+  ```
+  {
+    image,
+    expected: {
+      brand,
+      class_type,
+      alcohol_content,        // numeric ABV %
+      net_contents,           // e.g. "750 mL"
+      producer_name,
+      producer_address,
+      is_imported,            // bool — true requires country_of_origin
+      country_of_origin       // required iff is_imported, else nullable
+    }
+  }
+  ```
+- Government Warning is always required for alcohol — not part of expected values, validated separately against the canonical text (see decision #6).
 - A label-only "self-check" mode (does this label have all required fields, is the warning valid?) becomes a one-flag variation later.
 - Batch falls out naturally — one expected-values record per label.
 
@@ -20,19 +36,13 @@ Decisions captured from the planning conversation. Builds on [interview-highligh
 
 ---
 
-## 2. Extraction — OpenAI vision via OpenRouter (swap to direct OpenAI for demo)
+## 2. Extraction — OpenAI vision via OpenRouter
 
-**Decision:** Vision LLM, single structured-output call per label. OpenAI through OpenRouter during development; benchmark against direct OpenAI before the demo and swap if latency requires it.
+**Decision:** Vision LLM, single structured-output call per label. OpenAI models accessed through OpenRouter in both dev and production — same API surface end-to-end, no environment swap.
 
-**Why:** Vision LLMs handle stylized brand fonts, ornate label layouts, and semantic field identification ("this block is the warning statement") in one call. Pure OCR (Tesseract) collapses on stylized fonts; cloud OCR (Textract, Vision) is tuned for receipts/forms, not labels.
+**Why:** Vision LLMs handle stylized brand fonts, ornate label layouts, and semantic field identification ("this block is the warning statement") in one call. Pure OCR (Tesseract) collapses on stylized fonts; cloud OCR (Textract, Vision) is tuned for receipts/forms, not labels. OpenRouter gives us model portability — `gpt-4o`, `claude`, `gemini` all behind one API, swap with one env var if we want to compare.
 
-**Latency budget caveat:** Sarah's hard cutoff is 5 seconds end-to-end. Vision call is the long pole at ~2–4s. OpenRouter adds ~100–300ms of proxy latency — small but non-trivial against that budget. Swap path:
-
-```python
-# Single env-var change between OpenRouter and direct OpenAI
-OPENAI_BASE_URL=https://openrouter.ai/api/v1  # dev
-OPENAI_BASE_URL=https://api.openai.com/v1     # demo
-```
+**Latency budget:** Sarah's hard cutoff is 5 seconds end-to-end. Vision call is the long pole at ~2–4s. OpenRouter adds ~100–300ms of proxy latency — acceptable inside the budget. If it ever isn't, the swap path is `OPENAI_BASE_URL` (config-only, no code change).
 
 **Government Warning gets a dedicated path.** Per Jenny, the warning has to be exact word-for-word, all-caps, bold. Strict matching, not LLM-as-judge. Open question on whether that's a second vision call or a post-extraction validation of the warning block — see below.
 
@@ -94,11 +104,13 @@ OPENAI_BASE_URL=https://api.openai.com/v1     # demo
 
 | Field | Rule |
 |---|---|
-| Government Warning | Strict — exact text, all-caps, bold required. Surface specifically what failed. |
-| Brand name, producer, class/type | Normalize (case, whitespace, punctuation), then fuzzy match (Levenshtein or similar) with threshold. Handles Dave's `STONE'S THROW` vs `Stone's Throw`. |
-| ABV | Numeric tolerance (e.g., ±0.1%) — labels vary in display precision. |
-| Net contents | Unit-aware (`750 mL` ≡ `750ML` ≡ `0.75L`). |
-| Country of origin | Normalized exact match. |
+| Government Warning | Strict — exact text, all-caps, bold required. Surface specifically what failed. Always required for alcohol — not part of expected values, validated against the canonical text. |
+| `brand`, `class_type`, `producer_name` | Normalize (case, whitespace, punctuation), then fuzzy match (Levenshtein or similar) with threshold. Handles Dave's `STONE'S THROW` vs `Stone's Throw`. |
+| `producer_address` | Normalize then fuzzy match — accept abbreviations (`Kentucky` ≡ `KY`). |
+| `alcohol_content` | Numeric tolerance (e.g., ±0.1%) — labels vary in display precision. |
+| `net_contents` | Unit-aware (`750 mL` ≡ `750ML` ≡ `0.75L`). |
+| `is_imported` | Boolean exact match. If true, `country_of_origin` is required on both sides. |
+| `country_of_origin` | Normalized exact match. Required iff `is_imported`; if domestic, missing on label is acceptable. |
 
 **Why:** Programmatic comparison is fast (sub-millisecond), free, explainable to the agent ("brand differed only in case — passed under fuzzy match rule"), and not subject to model drift. LLM-as-judge is slow, expensive, and harder to trust.
 

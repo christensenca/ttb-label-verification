@@ -1,0 +1,15 @@
+{
+  "image": "gray_whale.jpg",
+  "tier": "real_photo",
+  "expected": {
+    "brand": "Gray Whale Gin",
+    "class_type": "Gin",
+    "alcohol_content": 43.0,
+    "net_contents": "750 mL",
+    "producer_name": "Golden State Distillery",
+    "producer_address": "Parlier, California",
+    "is_imported": false,
+    "country_of_origin": null
+  },
+  "notes": "Bottle lying on shelf at angle. Front: brand, 'Perfected With Six Californian Botanicals' and botanical list (Juniper Big Sur, Limes Temecula, Fir Tree Sonoma, Sea Kelp Mendocino Coast, Mint Santa Cruz, Almonds Central Valley). Back: ABV 43%, 750ML, Seven Times Distilled, Gluten Free, 100% Grain Neutral Spirits, Batch No. 037, Government Warning. Domestic product \u2014 country_of_origin not on label."
+}

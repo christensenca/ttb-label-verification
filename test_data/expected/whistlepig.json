@@ -1,0 +1,15 @@
+{
+  "image": "whistlepig.jpg",
+  "tier": "real_photo",
+  "expected": {
+    "brand": "WhistlePig",
+    "class_type": "Rye Whiskey",
+    "alcohol_content": 48.28,
+    "net_contents": "750 mL",
+    "producer_name": "WhistlePig Whiskey Co.",
+    "producer_address": "Mineville, NY",
+    "is_imported": false,
+    "country_of_origin": null
+  },
+  "notes": "Front: 'WhistlePig PiggyBack', 'SMALL BATCH', '100% RYE WHISKEY', '48.28 ALC/VOL', '96.56 PROOF', '750 ML', 'Aged 6 Years In New American Oak Barrels', 'Farm and Distillery'. Back: 'PiggyBack 100% Rye Whiskey', 'Give it 100' with QR code, Government Warning, 'DISTILLED IN VT & CANADA / BOTTLED BY WHISTLEPIG WHISKEY CO., MINEVILLE, NY'. Interesting case: label states co-origin of VT and Canada. 'PiggyBack' is the product/fanciful name, 'WhistlePig' is the brand."
+}

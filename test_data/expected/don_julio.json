@@ -1,0 +1,15 @@
+{
+  "image": "don_julio.jpg",
+  "tier": "real_photo",
+  "expected": {
+    "brand": "Don Julio",
+    "class_type": "Tequila Blanco",
+    "alcohol_content": 40.0,
+    "net_contents": "750 mL",
+    "producer_name": "Diageo",
+    "producer_address": "New York, NY",
+    "is_imported": true,
+    "country_of_origin": "Mexico"
+  },
+  "notes": "Bottle on retail shelf, slight angle. Front shows brand, class/type, ABV, net contents, '100% de agave', '1942', 'Hecho en M\u00e9xico'. Back has Government Warning (rotated), nutrition facts, NOM 1449, 'Product of Mexico', 'Imported by Diageo, New York NY'."
+}

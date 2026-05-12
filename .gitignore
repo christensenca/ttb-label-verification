@@ -24,6 +24,11 @@ Thumbs.db
 .idea/
 *.swp
 
+# Claude Code session state (per-user, not project state)
+.agents/
+.claude/
+skills-lock.json
+
 # Build artifacts
 dist/
 build/

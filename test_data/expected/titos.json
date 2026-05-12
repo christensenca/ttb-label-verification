@@ -1,0 +1,15 @@
+{
+  "image": "titos.jpg",
+  "tier": "real_photo",
+  "expected": {
+    "brand": "Tito's Handmade Vodka",
+    "class_type": "Vodka",
+    "alcohol_content": 40.0,
+    "net_contents": "750 mL",
+    "producer_name": "Fifth Generation Inc.",
+    "producer_address": "Austin, TX",
+    "is_imported": false,
+    "country_of_origin": null
+  },
+  "notes": "Clear glass bottle, lying down. Front: 'Tito's' (script), 'Handmade', 'VODKA', 'Award Winning American Vodka', 'Crafted in an Old Fashioned Pot Still', 'Distilled & Bottled by Fifth Generation Inc., Austin, TX', 'AUSTIN \u2605 TEXAS'. Back: 'Tito's Handmade Vodka', 'Designed to be Savored', 'GLUTEN-FREE \u2022 DISTILLED 6 TIMES', 'Unanimous Double Gold Medal Winner of the World Spirits Competition', '80 Proof' (=40% ABV), Government Warning, titosvodka.com. 80 Proof is on the label, ABV = 40%."
+}

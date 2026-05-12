@@ -1,0 +1,15 @@
+{
+  "image": "makers_mark.jpg",
+  "tier": "real_photo",
+  "expected": {
+    "brand": "Maker's Mark",
+    "class_type": "Kentucky Straight Bourbon Whisky",
+    "alcohol_content": 45.0,
+    "net_contents": "750 mL",
+    "producer_name": "The Maker's Mark Distillery Inc.",
+    "producer_address": "Star Hill Farm, Loretto, KY",
+    "is_imported": false,
+    "country_of_origin": null
+  },
+  "notes": "Bottle on shelf with iconic red wax dripping over neck. Front: 'Maker's Mark', 'Kentucky Straight Bourbon Whisky', 'Handmade since 1953', '750 ML 45% ALC/VOL', 'Made by the Maker's Mark Distillery Inc., Star Hill Farm, Loretto, KY'. Back: distiller info, B Corp Certified, Government Warning, CA CRV. Note brand spells it 'Whisky' (no 'e'), unusual for an American whiskey."
+}

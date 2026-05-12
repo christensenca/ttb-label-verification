@@ -1,0 +1,15 @@
+{
+  "image": "woodfords.jpg",
+  "tier": "real_photo",
+  "expected": {
+    "brand": "Woodford Reserve",
+    "class_type": "Kentucky Straight Rye Whiskey",
+    "alcohol_content": 45.2,
+    "net_contents": "750 mL",
+    "producer_name": "Woodford Reserve Distillery",
+    "producer_address": "Versailles, Kentucky",
+    "is_imported": false,
+    "country_of_origin": null
+  },
+  "notes": "Bottle lying flat. Front: 'Woodford Reserve', 'DISTILLER'S SELECT', 'Kentucky Straight Rye Whiskey', '750mL', '45.2% ALC/VOL (90.4 PROOF)', 'PROPRIETARY BATCH', 'Selected by Master Distiller', 'Bottle No. 3259', 'Label Batch 1289'. Back: 'Produced by the Woodford Reserve Distillery, Versailles, Kentucky USA', full Government Warning text, 'CA CRV', barcode. Note: this is the RYE variant, not the more common bourbon."
+}
