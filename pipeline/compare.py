@@ -97,9 +97,13 @@ def compare(extracted: dict, expected: dict) -> dict:
         expected.get("is_imported"),
         expected.get("country_of_origin"),
     )
-    out["government_warning_text"] = _warning_field(
+    warning_text_entry = _warning_text_field(extracted.get("government_warning_text"))
+    out["government_warning_text"] = warning_text_entry
+    out["government_warning_style"] = _warning_style_field(
         extracted.get("government_warning_text"),
         extracted.get("government_warning_bold"),
+        extracted.get("government_warning_body_bold"),
+        warning_text_entry["matched"],
     )
     return out
 
@@ -239,18 +243,15 @@ def _country_match(extracted, expected) -> dict:
     )
 
 
-def _warning_field(extracted, bold) -> dict:
-    """Near-exact comparison against the canonical TTB Government Warning.
+def _warning_text_field(extracted) -> dict:
+    """Near-exact text comparison against the canonical TTB Government Warning.
 
-    Three sub-checks per 27 CFR 16.21 and Jenny's interview:
+    Text checks per 27 CFR 16.21 and Jenny's interview:
       1. Prefix "GOVERNMENT WARNING:" appears verbatim, case-sensitive
          (she rejected a submission for title-casing it).
       2. Body text matches the canonical wording (case-insensitive,
          since the regulation fixes the *text* — labels print it in caps
          but our canonical string is the regulatory string).
-      3. Header is printed in bold. ``bold=True`` passes; ``False`` fails;
-         ``None`` is treated as "unknown" and does not fail the check
-         (older cached extractions predate the bold field).
 
     Commas, periods, parens, and clause ordering are preserved by
     `normalize_warning_text` so real label deviations still surface.
@@ -274,19 +275,50 @@ def _warning_field(extracted, bold) -> dict:
             CANONICAL_WARNING,
             "text differs from TTB canonical warning",
         )
-    if bold is False:
+    return _entry(True, extracted, CANONICAL_WARNING, "exact text match to TTB canonical")
+
+
+def _warning_style_field(extracted, header_bold, body_bold=None, text_matched=False) -> dict:
+    """Typography review signal for the Government Warning.
+
+    Style checks per 27 CFR 16.22:
+      1. Header is printed in bold. ``header_bold=True`` passes; ``False``
+         fails; ``None`` is treated as "unknown" and does not fail the check
+         (older cached extractions predate the bold field).
+      2. Body is not printed in bold. ``body_bold=True`` fails; ``False`` or
+         ``None`` pass because current cached extractions may not include the
+         body-bold signal.
+    """
+    if extracted is None:
+        return _entry(False, None, "header bold; body regular", "warning text missing")
+    if not text_matched:
         return _entry(
             False,
             extracted,
-            CANONICAL_WARNING,
+            "header bold; body regular",
+            "style not evaluated because warning text differs",
+        )
+    if header_bold is False:
+        return _entry(
+            False,
+            extracted,
+            "header bold; body regular",
             "text matches but warning header is not bold",
         )
-    bold_note = "bold confirmed" if bold is True else "bold unverified"
+    if body_bold is True:
+        return _entry(
+            False,
+            extracted,
+            "header bold; body regular",
+            "text matches but remainder of warning appears bold",
+        )
+    header_note = "bold confirmed" if header_bold is True else "bold unverified"
+    body_note = "body regular" if body_bold is False else "body weight unverified"
     return _entry(
         True,
         extracted,
-        CANONICAL_WARNING,
-        f"exact match to TTB canonical ({bold_note})",
+        "header bold; body regular",
+        f"warning typography review ({header_note}; {body_note})",
     )
 
 

@@ -27,7 +27,7 @@ from PIL import Image
 from pydantic import BaseModel, Field
 
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
-DEFAULT_MODEL = "google/gemini-3.1-flash-lite"
+DEFAULT_MODEL = "google/gemini-3.1-pro-preview"
 DEFAULT_IMAGE_LONG_SIDE = 1536  # Currently-checked-in composites are this size.
 
 ExtractionConfidence = Literal["low", "med", "hi"]
@@ -82,7 +82,9 @@ class OneShotExtractedLabel(BaseModel):
     producer_address: FieldExtraction = Field(
         description=(
             "Regulatory responsible-party address as printed. For imported products, "
-            "use the US importer city/state from the 'Imported by' statement."
+            "use the US importer city/state from the 'Imported by' statement. "
+            "Return null if the city/state text is not visible and legible; never "
+            "infer an address from brand knowledge."
         )
     )
     is_imported: bool | None = Field(
@@ -106,9 +108,19 @@ class OneShotExtractedLabel(BaseModel):
     )
     government_warning_bold: bool | None = Field(
         description=(
-            "True if the 'GOVERNMENT WARNING:' header appears bold, false if it "
-            "appears regular weight, null if the image is not clear enough to tell."
-        )
+            "True if the 'GOVERNMENT WARNING:' header looks darker/heavier than "
+            "the warning text that follows. False if it looks the same weight. "
+            "Null if unclear."
+        ),
+        default=None,
+    )
+    government_warning_body_bold: bool | None = Field(
+        description=(
+            "True if the warning body after the 'GOVERNMENT WARNING:' header appears "
+            "bold, false if the body appears regular weight, null if the image is "
+            "not clear enough to tell."
+        ),
+        default=None,
     )
 
 
@@ -129,7 +141,11 @@ class ExtractedLabel(BaseModel):
     country_of_origin: str | None = Field(description="Country-of-origin text as printed.")
     government_warning_text: str | None = Field(description="Government Warning text as printed.")
     government_warning_bold: bool | None = Field(
-        description="Whether the Government Warning header appears bold."
+        description="Whether the Government Warning header appears bold.", default=None
+    )
+    government_warning_body_bold: bool | None = Field(
+        description="Whether the Government Warning body after the header appears bold.",
+        default=None,
     )
 
 
@@ -177,7 +193,9 @@ name/address statement for the product. For imported spirits, prefer the US \
 "Imported by" name and city/state over any foreign "Bottled by", "Distilled \
 by", or producer statement. For domestic products, use the visible bottler, \
 distiller, or processor name/address statement. Keep wording as printed; do \
-not strip or rewrite prepositions.
+not strip or rewrite prepositions. Do not use known distillery, headquarters, \
+farm, website, or brand locations. Do not return an address unless the \
+city/state text is visible and legible in this image; return null instead.
 
 - is_imported: True only when visible label text says "Imported by" or \
 equivalent import language. False when visible text clearly identifies a \
@@ -187,12 +205,16 @@ domestic producer/bottler without import language. Null if unclear.
 Null if no country-of-origin text is visible.
 
 - government_warning_text: Return only the visible Government Warning text \
-exactly as printed. If the back panel or warning block is not visible, this \
-field must be null. Do not fill in the standard warning from memory.
+exactly as printed, character by character, including commas and periods. If \
+the back panel or warning block is not visible, this field must be null. Do \
+not fill in the standard warning from memory.
 
-- government_warning_bold: True if the 'GOVERNMENT WARNING:' header is \
-printed in bold typeface on the label. False if regular weight. Null if \
-you cannot tell from the image.
+- government_warning_bold: Compare 'GOVERNMENT WARNING:' to the warning text \
+immediately after it. True if the header looks darker/heavier. False if it \
+looks the same weight. Null if unclear. All-caps is not bold.
+
+- government_warning_body_bold: True if the warning text after the header is \
+bold. False if regular. Null if unclear. All-caps is not bold.
 """
 
 
@@ -218,6 +240,7 @@ def unwrap_one_shot_label(
         **flat,
         is_imported=one_shot.is_imported,
         government_warning_bold=one_shot.government_warning_bold,
+        government_warning_body_bold=one_shot.government_warning_body_bold,
     )
     return label, confidence
 

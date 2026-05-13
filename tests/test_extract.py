@@ -8,6 +8,8 @@ label shape without sneaking comparison normalization into extraction.
 from __future__ import annotations
 
 from pipeline.extract import (
+    DEFAULT_MODEL,
+    SYSTEM_PROMPT,
     FieldExtraction,
     OneShotExtractedLabel,
     unwrap_one_shot_label,
@@ -30,6 +32,7 @@ def test_unwrap_one_shot_label_flattens_values_and_preserves_confidence():
         country_of_origin=_field(None, "low"),
         government_warning_text=_field("GOVERNMENT WARNING: (1) READABLE", "med"),
         government_warning_bold=True,
+        government_warning_body_bold=False,
     )
 
     label, confidence = unwrap_one_shot_label(one_shot)
@@ -45,6 +48,7 @@ def test_unwrap_one_shot_label_flattens_values_and_preserves_confidence():
         "country_of_origin": None,
         "government_warning_text": "GOVERNMENT WARNING: (1) READABLE",
         "government_warning_bold": True,
+        "government_warning_body_bold": False,
     }
     assert confidence == {
         "brand": "hi",
@@ -70,6 +74,7 @@ def test_unwrap_one_shot_label_does_not_normalize_or_parse_values():
         country_of_origin=_field("SCOTLAND", "hi"),
         government_warning_text=_field("Government Warning: mixed case", "low"),
         government_warning_bold=False,
+        government_warning_body_bold=None,
     )
 
     label, _ = unwrap_one_shot_label(one_shot)
@@ -83,3 +88,24 @@ def test_unwrap_one_shot_label_does_not_normalize_or_parse_values():
     assert label.country_of_origin == "SCOTLAND"
     assert label.government_warning_text == "Government Warning: mixed case"
     assert label.government_warning_bold is False
+    assert label.government_warning_body_bold is None
+
+
+def test_prompt_forbids_known_brand_address_leakage():
+    assert "Do not use known distillery" in SYSTEM_PROMPT
+    assert "Do not return an address unless the city/state text is visible" in SYSTEM_PROMPT
+
+
+def test_prompt_separates_warning_header_bold_from_body_bold():
+    assert "Compare 'GOVERNMENT WARNING:'" in SYSTEM_PROMPT
+    assert "warning text after the header" in SYSTEM_PROMPT
+
+
+def test_default_model_is_gemini_pro_preview():
+    assert DEFAULT_MODEL == "google/gemini-3.1-pro-preview"
+
+
+def test_prompt_describes_warning_bold_concisely():
+    assert "Compare 'GOVERNMENT WARNING:' to the warning text immediately after it" in SYSTEM_PROMPT
+    assert "True if the header looks darker/heavier" in SYSTEM_PROMPT
+    assert "All-caps is not bold" in SYSTEM_PROMPT

@@ -226,18 +226,42 @@ def test_warning_missing_fails():
     assert out["government_warning_text"]["matched"] is False
 
 
-def test_warning_bold_true_passes():
+def test_warning_bold_true_passes_text_and_style():
     ext = _base() | {"government_warning_bold": True}
     out = compare(ext, _base())
     assert out["government_warning_text"]["matched"] is True
-    assert "bold confirmed" in out["government_warning_text"]["reason"]
+    assert out["government_warning_style"]["matched"] is True
+    assert "bold confirmed" in out["government_warning_style"]["reason"]
 
 
-def test_warning_bold_false_fails_even_with_correct_text():
+def test_warning_bold_false_is_style_issue_not_text_failure():
     ext = _base() | {"government_warning_bold": False}
     out = compare(ext, _base())
-    assert out["government_warning_text"]["matched"] is False
-    assert "not bold" in out["government_warning_text"]["reason"]
+    assert out["government_warning_text"]["matched"] is True
+    assert out["government_warning_style"]["matched"] is False
+    assert "not bold" in out["government_warning_style"]["reason"]
+
+
+def test_warning_all_caps_body_passes_when_only_header_is_bold():
+    ext = _base() | {
+        "government_warning_text": CANONICAL_WARNING.upper(),
+        "government_warning_bold": True,
+        "government_warning_body_bold": False,
+    }
+    out = compare(ext, _base())
+    assert out["government_warning_text"]["matched"] is True
+
+
+def test_warning_body_bold_is_style_issue_not_text_failure():
+    ext = _base() | {
+        "government_warning_text": CANONICAL_WARNING.upper(),
+        "government_warning_bold": True,
+        "government_warning_body_bold": True,
+    }
+    out = compare(ext, _base())
+    assert out["government_warning_text"]["matched"] is True
+    assert out["government_warning_style"]["matched"] is False
+    assert "remainder" in out["government_warning_style"]["reason"]
 
 
 def test_warning_bold_unknown_does_not_fail():
@@ -246,7 +270,8 @@ def test_warning_bold_unknown_does_not_fail():
     ext = _base() | {"government_warning_bold": None}
     out = compare(ext, _base())
     assert out["government_warning_text"]["matched"] is True
-    assert "bold unverified" in out["government_warning_text"]["reason"]
+    assert out["government_warning_style"]["matched"] is True
+    assert "bold unverified" in out["government_warning_style"]["reason"]
 
 
 def test_warning_whitespace_collapses():
@@ -272,6 +297,7 @@ def test_returns_all_fields():
         "is_imported",
         "country_of_origin",
         "government_warning_text",
+        "government_warning_style",
     }
     assert set(out.keys()) == expected_keys
 
