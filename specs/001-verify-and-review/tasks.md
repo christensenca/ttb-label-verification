@@ -137,17 +137,17 @@ red, and `government_warning_style` (no confidence) is never yellow.
 
 ### Tests for User Story 3
 
-- [ ] T048 [P] [US3] Frontend component test in `frontend/src/components/__tests__/InlineDiff.test.tsx` (Vitest): renders all three token kinds with distinct class names; preserves whitespace; renders empty when token list is empty.
-- [ ] T049 [P] [US3] Frontend test in `frontend/src/components/__tests__/FieldRow.test.tsx`: row classes resolve to green/yellow/red per the truth table in [research.md R11](research.md) — `(pass, hi, text) = green`, `(pass, low, text) = yellow`, `(pass, null, non-text) = green`, `(fail, *, *) = red`, `(not_applicable, *, *) = grey`.
+- [X] T048 [P] [US3] Frontend component test in `frontend/src/components/__tests__/InlineDiff.test.tsx` (Vitest): renders all three token kinds with distinct class names; preserves whitespace; renders empty when token list is empty.
+- [X] T049 [P] [US3] Frontend test in `frontend/src/components/__tests__/FieldRow.test.tsx`: row classes resolve to green/yellow/red per the truth table in [research.md R11](research.md) — `(pass, hi, text) = green`, `(pass, low, text) = yellow`, `(pass, null, non-text) = green`, `(fail, *, *) = red`, `(not_applicable, *, *) = grey`.
 
 ### Implementation for User Story 3
 
-- [ ] T050 [US3] Frontend: implement `frontend/src/components/InlineDiff.tsx` — accepts `tokens: DiffToken[]`, renders each token as a `<span>` with class `diff-equal`/`diff-added`/`diff-removed`. CSS module styles highlight `added`/`removed` differently.
-- [ ] T051 [US3] Frontend: enrich `FieldRow.tsx` to render `<InlineDiff/>` in the Extracted column from `diff_extracted` and in the Expected column from `diff_expected` when present (only on `verdict='fail'` text fields per [contracts/api.md](contracts/api.md)).
-- [ ] T052 [US3] Frontend: implement `frontend/src/components/FieldRow.module.css` (or a `rowColorClass(field)` helper) deriving the tri-state class from `(effective_verdict, confidence, field_kind)` per R11. Apply as a CSS class on the row container.
-- [ ] T053 [P] [US3] Frontend: implement `frontend/src/components/ConfidenceBadge.tsx` — small inline badge rendered for text fields when `confidence in {"low", "med"}`. Subordinate visual weight per Principle V; hidden when `confidence in {"hi", null}`.
-- [ ] T054 [US3] Frontend: integrate `ConfidenceBadge` into `FieldRow.tsx` after the Expected column.
-- [ ] T055 [P] [US3] Frontend: `NotApplicable` styling in the row CSS — greyed-out row with "Not applicable" verdict label.
+- [X] T050 [US3] Frontend: implement `frontend/src/components/InlineDiff.tsx` — accepts `tokens: DiffToken[]`, renders each token as a `<span>` with class `diff-equal`/`diff-added`/`diff-removed`. CSS module styles highlight `added`/`removed` differently.
+- [X] T051 [US3] Frontend: enrich `FieldRow.tsx` to render `<InlineDiff/>` in the Extracted column from `diff_extracted` and in the Expected column from `diff_expected` when present (only on `verdict='fail'` text fields per [contracts/api.md](contracts/api.md)).
+- [X] T052 [US3] Frontend: implement `frontend/src/components/FieldRow.module.css` (or a `rowColorClass(field)` helper) deriving the tri-state class from `(effective_verdict, confidence, field_kind)` per R11. Apply as a CSS class on the row container.
+- [X] T053 [P] [US3] Frontend: implement `frontend/src/components/ConfidenceBadge.tsx` — small inline badge rendered for text fields when `confidence in {"low", "med"}`. Subordinate visual weight per Principle V; hidden when `confidence in {"hi", null}`.
+- [X] T054 [US3] Frontend: integrate `ConfidenceBadge` into `FieldRow.tsx` after the Expected column.
+- [X] T055 [P] [US3] Frontend: `NotApplicable` styling in the row CSS — greyed-out row with "Not applicable" verdict label.
 
 **Checkpoint**: Spec AS 3.1–3.4 pass during manual review of a fixture batch.
 

@@ -1,0 +1,27 @@
+.root {
+  display: inline;
+  white-space: pre-wrap;
+}
+
+.token {
+  display: inline;
+}
+
+.equal {
+  /* baseline text */
+}
+
+.added {
+  background-color: #c8e6c9;
+  color: #1b5e20;
+  padding: 0 1px;
+  border-radius: 2px;
+}
+
+.removed {
+  background-color: #ffcdd2;
+  color: #b71c1c;
+  text-decoration: line-through;
+  padding: 0 1px;
+  border-radius: 2px;
+}

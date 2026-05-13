@@ -30,7 +30,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start */
+        /**
+         * Start
+         * @description Flip every loaded row to processing and schedule extraction.
+         *
+         *     Defined `async` so `asyncio.create_task(...)` inside `_schedule_processing`
+         *     targets the main event loop. With a sync handler in FastAPI's threadpool
+         *     the scheduled tasks would race against the request's own row locks and
+         *     deadlock. The handler returns immediately; the queued tasks run after
+         *     the request's session commits and releases its locks.
+         */
         post: operations["start_api_submissions_start_post"];
         delete?: never;
         options?: never;
