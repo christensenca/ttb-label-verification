@@ -19,7 +19,7 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import func, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 import pipeline.extract as pipeline_extract
@@ -280,28 +280,36 @@ def _write_failure(
 def process_all_loaded(db: Session) -> list[uuid.UUID]:
     """Flip every `loaded` submission to `processing` and schedule extraction.
 
-    The flip happens in one SQL `UPDATE ... RETURNING id` so callers never see
-    a half-flipped queue. The handler returns immediately; each scheduled task
-    acquires the semaphore independently before invoking the vision call.
+    We select IDs ordered by `created_at DESC` (matching the queue UI's
+    display order) so scheduling is deterministic — the first items on
+    screen are the first admitted to the concurrency semaphore. The
+    subsequent UPDATE flips all of them in one statement so callers never
+    see a half-flipped queue.
 
     Takes the FastAPI-managed session so the flip is visible inside the same
     request transaction (and so tests using a SAVEPOINT session see it).
     """
-    ids: list[uuid.UUID] = list(
+    ordered_ids: list[uuid.UUID] = list(
         db.execute(
-            update(Submission)
+            select(Submission.id)
             .where(Submission.status == "loaded")
-            .values(status="processing", updated_at=func.now())
-            .returning(Submission.id)
+            .order_by(Submission.created_at.desc(), Submission.id)
         )
         .scalars()
         .all()
     )
+    if not ordered_ids:
+        return []
+
+    db.execute(
+        update(Submission)
+        .where(Submission.id.in_(ordered_ids))
+        .values(status="processing", updated_at=func.now())
+    )
     db.flush()
 
-    if ids:
-        _schedule_processing(ids)
-    return ids
+    _schedule_processing(ordered_ids)
+    return ordered_ids
 
 
 def _schedule_processing(ids: Iterable[uuid.UUID]) -> None:

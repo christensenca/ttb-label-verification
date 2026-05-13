@@ -60,3 +60,41 @@ def test_start_with_loaded_items_flips_all_to_processing_synchronously(
         select(Submission).where(Submission.id.in_(ids))
     ).scalars().all()
     assert {r.status for r in rows} == {"processing"}
+
+
+def test_start_schedules_in_created_at_desc_order(
+    client, db_session, monkeypatch
+):
+    """The processor must schedule items in the same order the UI displays
+    them (`created_at DESC`), so the first row on screen is the first one
+    admitted to the concurrency semaphore. Without this, a fresh reset can
+    leave the physical row order — which the UI never shows — driving the
+    processing order, and reviewers see "middle 3 first."
+    """
+    from datetime import datetime, timedelta, timezone
+
+    from app.services import processor as proc_module
+
+    scheduled: list = []
+    monkeypatch.setattr(
+        proc_module, "_schedule_processing", lambda ids: scheduled.extend(ids)
+    )
+
+    # Insert with explicit created_at values so the test is independent of
+    # insertion-time clock resolution and Postgres tuple placement.
+    base = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    subs = []
+    for offset_minutes in [10, 30, 5, 20, 0]:
+        sub = _insert(db_session)
+        sub.created_at = base + timedelta(minutes=offset_minutes)
+        subs.append(sub)
+    db_session.flush()
+
+    response = client.post("/api/submissions/start")
+    assert response.status_code == 202, response.text
+
+    # Expected: descending created_at — minutes 30, 20, 10, 5, 0.
+    expected_order = [s.id for s in sorted(subs, key=lambda s: -s.created_at.timestamp())]
+    body = response.json()
+    assert [str(i) for i in expected_order] == body["submission_ids"]
+    assert expected_order == scheduled
