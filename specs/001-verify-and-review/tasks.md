@@ -217,20 +217,20 @@ persistence.
 
 ### Tests for User Story 4
 
-- [ ] T066 [P] [US4] Contract test in `tests/api/test_overrides.py`: `POST /api/submissions/{id}/overrides` with valid `{field, override_verdict, comment}` → 200; empty comment → 400; unknown field → 400; second POST on same field replaces (UPSERT) the existing row; status outside `ready_for_review`/`extraction_failed` → 409.
-- [ ] T067 [P] [US4] Contract test in `tests/api/test_overrides_delete.py`: `DELETE /api/submissions/{id}/overrides/{field}` → 204; subsequent `GET /api/submissions/{id}` shows `effective_verdict` reverted to `model_verdict`; deleting a non-existent override → 404.
-- [ ] T068 [P] [US4] Integration test in `tests/integration/test_override_flow.py`: process item with one extracted-as-fail field → override to pass with comment → approve → reload → assert both the override (with comment) and the approval persisted, original model verdict still visible in the payload.
+- [X] T066 [P] [US4] Contract test in `tests/api/test_overrides.py`: `POST /api/submissions/{id}/overrides` with valid `{field, override_verdict, comment}` → 200; empty comment → 400; unknown field → 400; second POST on same field replaces (UPSERT) the existing row; status outside `ready_for_review`/`extraction_failed` → 409.
+- [X] T067 [P] [US4] Contract test in `tests/api/test_overrides_delete.py`: `DELETE /api/submissions/{id}/overrides/{field}` → 204; subsequent `GET /api/submissions/{id}` shows `effective_verdict` reverted to `model_verdict`; deleting a non-existent override → 404.
+- [X] T068 [P] [US4] Integration test in `tests/integration/test_override_flow.py`: process item with one extracted-as-fail field → override to pass with comment → approve → reload → assert both the override (with comment) and the approval persisted, original model verdict still visible in the payload.
 
 ### Implementation for User Story 4
 
-- [ ] T069 [US4] Backend: implement `app/api/overrides.py::create_override` (`POST`) with UPSERT semantics (delete-and-insert in one tx; preserves "one override row per field" UNIQUE constraint per data-model). Snapshots the original model verdict from the matching `comparisons` row.
-- [ ] T070 [US4] Backend: implement `app/api/overrides.py::delete_override` (`DELETE`).
-- [ ] T071 [US4] Backend: extract effective-verdict computation into `app/services/reviews.py::compute_effective_verdict(comparison, override)` — used by the detail endpoint payload (T036) and by the rejection-id validation (T062). Centralizes the rule.
-- [ ] T072 [US4] Register `overrides.router` in `app/main.py`; regenerate `frontend/src/api/generated.ts`.
-- [ ] T073 [P] [US4] Frontend: `frontend/src/components/ImageLightbox.tsx` — modal showing the image at large size; close on Escape / click-outside / X button.
-- [ ] T074 [P] [US4] Frontend: `frontend/src/components/OverrideDialog.tsx` — modal with required comment textarea, `Override to Pass` and `Override to Fail` buttons; calls the override endpoint on submit.
-- [ ] T075 [US4] Frontend: enrich `FieldRow.tsx` — clickable image affordance opens `ImageLightbox`; "Override" button on every row opens `OverrideDialog`; when an override is present, the row renders with the override-styled border per R11 and shows both the override verdict and the original model verdict (FR-020).
-- [ ] T076 [US4] Frontend: handle override-delete affordance ("Remove override") on rows with an existing override.
+- [X] T069 [US4] Backend: implement `app/api/overrides.py::create_override` (`POST`) with UPSERT semantics (delete-and-insert in one tx; preserves "one override row per field" UNIQUE constraint per data-model). Snapshots the original model verdict from the matching `comparisons` row.
+- [X] T070 [US4] Backend: implement `app/api/overrides.py::delete_override` (`DELETE`).
+- [X] T071 [US4] Backend: extract effective-verdict computation into `app/services/reviews.py::compute_effective_verdict(comparison, override)` — used by the detail endpoint payload (T036) and by the rejection-id validation (T062). Centralizes the rule.
+- [X] T072 [US4] Register `overrides.router` in `app/main.py`; regenerate `frontend/src/api/generated.ts`.
+- [X] T073 [P] [US4] Frontend: `frontend/src/components/ImageLightbox.tsx` — modal showing the image at large size; close on Escape / click-outside / X button.
+- [X] T074 [P] [US4] Frontend: `frontend/src/components/OverrideDialog.tsx` — modal with required comment textarea, `Override to Pass` and `Override to Fail` buttons; calls the override endpoint on submit.
+- [X] T075 [US4] Frontend: enrich `FieldRow.tsx` — clickable image affordance opens `ImageLightbox`; "Override" button on every row opens `OverrideDialog`; when an override is present, the row renders with the override-styled border per R11 and shows both the override verdict and the original model verdict (FR-020).
+- [X] T076 [US4] Frontend: handle override-delete affordance ("Remove override") on rows with an existing override.
 
 **Checkpoint**: Spec AS 4.1–4.4 pass; override survives reload alongside the model verdict.
 

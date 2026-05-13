@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -7,6 +7,7 @@ import type { components } from '../api/generated'
 import DecisionPanel, { type RejectionCandidate } from '../components/DecisionPanel'
 import ExtractionFailedBanner from '../components/ExtractionFailedBanner'
 import FieldGroup from '../components/FieldGroup'
+import ImageLightbox from '../components/ImageLightbox'
 import { STATUS_LABEL } from '../components/QueueTable'
 
 type Detail = components['schemas']['SubmissionDetailOut']
@@ -27,6 +28,7 @@ const FIELD_LABELS: Record<string, string> = {
 export default function ReviewPage() {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   const detailQuery = useQuery<Detail>({
     queryKey: ['submission', id],
@@ -110,23 +112,39 @@ export default function ReviewPage() {
         style={{
           margin: '0 0 20px',
           display: 'flex',
-          justifyContent: 'center',
+          flexDirection: 'column',
+          alignItems: 'center',
           background: '#fafafa',
           border: '1px solid #ddd',
           borderRadius: 4,
           padding: 12,
         }}
       >
-        <img
-          src={detail.image_url}
-          alt={detail.expected_values.brand}
+        <button
+          type="button"
+          onClick={() => setLightboxOpen(true)}
           style={{
-            maxWidth: '100%',
-            maxHeight: 380,
-            objectFit: 'contain',
-            borderRadius: 2,
+            border: 'none',
+            background: 'transparent',
+            padding: 0,
+            cursor: 'zoom-in',
           }}
-        />
+          title="Open at readable size"
+        >
+          <img
+            src={detail.image_url}
+            alt={detail.expected_values.brand}
+            style={{
+              maxWidth: '100%',
+              maxHeight: 380,
+              objectFit: 'contain',
+              borderRadius: 2,
+            }}
+          />
+        </button>
+        <span style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
+          Click image to enlarge
+        </span>
       </figure>
       <div className="fields-pane">
         {stillProcessing && (
@@ -134,7 +152,16 @@ export default function ReviewPage() {
         )}
         {!stillProcessing &&
           (detail.groups ?? []).map((g) => (
-            <FieldGroup key={g.name} group={g} />
+            <FieldGroup
+              key={g.name}
+              group={g}
+              submissionId={detail.id}
+              status={detail.status}
+              onOpenImage={() => setLightboxOpen(true)}
+              onOverrideChanged={() =>
+                queryClient.invalidateQueries({ queryKey: ['submission', id] })
+              }
+            />
           ))}
         {!stillProcessing && (
           <DecisionPanel
@@ -150,6 +177,14 @@ export default function ReviewPage() {
           />
         )}
       </div>
+      {lightboxOpen && (
+        <ImageLightbox
+          src={detail.image_url}
+          alt={detail.expected_values.brand}
+          caption={detail.expected_values.brand}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </section>
   )
 }

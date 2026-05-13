@@ -35,6 +35,7 @@ from app.config import get_settings
 from app.db.models import Comparison, Extraction, FieldOverride, Review, Submission
 from app.db.session import get_db
 from app.services import processor
+from app.services.reviews import compute_effective_verdict
 from app.services.storage import FilesystemImageStore
 
 router = APIRouter(prefix="/api", tags=["submissions"])
@@ -425,7 +426,7 @@ def _build_field_row(
     override: FieldOverride | None,
     confidence: str | None,
 ) -> FieldRowOut:
-    effective_verdict = override.override_verdict if override else cmp.verdict
+    effective_verdict = compute_effective_verdict(cmp, override)
     override_dto: OverrideOut | None = None
     if override is not None:
         override_dto = OverrideOut(

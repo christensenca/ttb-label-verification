@@ -5,6 +5,7 @@ import styles from './FieldGroup.module.css'
 type Group = components['schemas']['FieldGroupOut']
 type FieldOut = components['schemas']['FieldRowOut']
 type Confidence = FieldOut['confidence']
+type Status = components['schemas']['SubmissionListItem']['status']
 
 /**
  * `is_imported` and `government_warning_style` are not extracted as
@@ -28,7 +29,21 @@ function effectiveConfidence(
   return null
 }
 
-export default function FieldGroup({ group }: { group: Group }) {
+interface Props {
+  group: Group
+  submissionId: string
+  status: Status
+  onOpenImage: () => void
+  onOverrideChanged: () => void
+}
+
+export default function FieldGroup({
+  group,
+  submissionId,
+  status,
+  onOpenImage,
+  onOverrideChanged,
+}: Props) {
   const byName = Object.fromEntries(group.fields.map((f) => [f.field, f]))
   return (
     <section className={styles.group}>
@@ -40,6 +55,7 @@ export default function FieldGroup({ group }: { group: Group }) {
           <col className={styles.colExpected} />
           <col className={styles.colConfidence} />
           <col className={styles.colVerdict} />
+          <col className={styles.colActions} />
         </colgroup>
         <thead>
           <tr className={styles.headerRow}>
@@ -48,6 +64,7 @@ export default function FieldGroup({ group }: { group: Group }) {
             <th>Expected</th>
             <th>Confidence</th>
             <th>Verdict</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -55,7 +72,11 @@ export default function FieldGroup({ group }: { group: Group }) {
             <FieldRow
               key={f.id}
               field={f}
+              submissionId={submissionId}
+              status={status}
               displayConfidence={effectiveConfidence(f, byName)}
+              onOpenImage={onOpenImage}
+              onOverrideChanged={onOverrideChanged}
             />
           ))}
         </tbody>

@@ -153,7 +153,7 @@ class SubmissionDetailOut(BaseModel):
 class OverrideIn(BaseModel):
     field: Annotated[str, StringConstraints(min_length=1)]
     override_verdict: OverrideVerdict
-    comment: Annotated[str, StringConstraints(min_length=1, max_length=2000)]
+    comment: Annotated[str, StringConstraints(max_length=2000)] = ""
 
 
 # --- Decisions --------------------------------------------------------------

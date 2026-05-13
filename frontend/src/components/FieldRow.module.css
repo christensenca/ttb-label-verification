@@ -28,6 +28,55 @@
   padding: 10px 12px;
 }
 
+.cellActions {
+  padding: 10px 12px;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.iconButton {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #08060d;
+}
+
+.iconButton:hover {
+  background: #f3f3f3;
+  border-color: #ccc;
+}
+
+.iconButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #1565c0;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.linkButton:hover {
+  color: #0d47a1;
+}
+
+.linkButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
 .warningText .cellValue {
   font-size: 12px;
   line-height: 1.4;
@@ -119,16 +168,18 @@
 }
 
 .overridden {
-  outline: 2px dashed #6a1b9a;
-  outline-offset: -2px;
+  /* No special row-level styling — the verdict cell ("Fail → Pass") already
+     communicates the override clearly. */
 }
 
-.originalVerdict {
-  display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  color: #6a1b9a;
-  text-transform: none;
-  letter-spacing: normal;
+.pillModelVerdict {
+  opacity: 0.65;
   font-weight: 500;
+  margin-right: 2px;
+}
+
+.pillArrow {
+  margin: 0 2px;
+  opacity: 0.7;
+  font-weight: 400;
 }

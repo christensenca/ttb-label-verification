@@ -1,0 +1,57 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 6, 13, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.shell {
+  position: relative;
+  max-width: 95vw;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.image {
+  max-width: 95vw;
+  max-height: 85vh;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
+}
+
+.closeButton {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #ccc;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #08060d;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.closeButton:hover {
+  background: #f3f3f3;
+}
+
+.caption {
+  color: #fff;
+  font-size: 13px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 4px 10px;
+  border-radius: 12px;
+}

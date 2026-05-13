@@ -29,6 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app.api import decisions as decisions_api
+from app.api import overrides as overrides_api
 from app.api import submissions as submissions_api
 from app.config import get_settings
 from app.db.seed import run_seed
@@ -81,6 +82,7 @@ def create_app() -> FastAPI:
 
     app.include_router(submissions_api.router)
     app.include_router(decisions_api.router)
+    app.include_router(overrides_api.router)
 
     @app.get("/healthz", tags=["health"])
     def healthz() -> Response:

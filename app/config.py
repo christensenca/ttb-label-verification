@@ -13,6 +13,11 @@ from pathlib import Path
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Repo root — used to anchor relative paths so they don't depend on the
+# process's cwd (e.g. starting uvicorn from frontend/ would otherwise resolve
+# `./.local/images` against the wrong directory and silently 404 on images).
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables.
@@ -21,7 +26,7 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_REPO_ROOT / ".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -53,6 +58,11 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
+
+    @field_validator("image_storage_dir", mode="after")
+    @classmethod
+    def _anchor_image_dir(cls, v: Path) -> Path:
+        return v if v.is_absolute() else (_REPO_ROOT / v).resolve()
 
 
 @lru_cache(maxsize=1)

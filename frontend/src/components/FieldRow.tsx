@@ -1,10 +1,14 @@
+import { useState } from 'react'
+
 import type { components } from '../api/generated'
 import InlineDiff from './InlineDiff'
 import ConfidenceBadge from './ConfidenceBadge'
+import OverrideDialog from './OverrideDialog'
 import styles from './FieldRow.module.css'
 
 type Field = components['schemas']['FieldRowOut']
 type Confidence = Field['confidence']
+type Status = components['schemas']['SubmissionListItem']['status']
 
 const FIELD_LABELS: Record<string, string> = {
   brand: 'Brand',
@@ -41,13 +45,12 @@ export function rowColorClass(field: Field): RowColor {
   return 'green'
 }
 
+function capitalize(v: string): string {
+  return v.charAt(0).toUpperCase() + v.slice(1)
+}
+
 function verdictLabel(field: Field): string {
   if (field.effective_verdict === 'not_applicable') return 'N/A'
-  if (field.override) {
-    return field.override.override_verdict === 'pass'
-      ? 'Overridden Pass'
-      : 'Overridden Fail'
-  }
   return field.effective_verdict === 'pass' ? 'Pass' : 'Fail'
 }
 
@@ -112,13 +115,24 @@ function renderValue(field: Field, side: 'extracted' | 'expected') {
   return <>{value}</>
 }
 
+interface Props {
+  field: Field
+  submissionId: string
+  status: Status
+  displayConfidence?: Confidence
+  onOpenImage: () => void
+  onOverrideChanged: () => void
+}
+
 export default function FieldRow({
   field,
+  submissionId,
+  status,
   displayConfidence,
-}: {
-  field: Field
-  displayConfidence?: Confidence
-}) {
+  onOpenImage,
+  onOverrideChanged,
+}: Props) {
+  const [showOverrideDialog, setShowOverrideDialog] = useState(false)
   const label = FIELD_LABELS[field.field] ?? field.field
   const color = rowColorClass(field)
   const isWarningText = field.field === 'government_warning_text'
@@ -135,25 +149,70 @@ export default function FieldRow({
     displayConfidence !== undefined ? displayConfidence : field.confidence ?? null
   const detail = verdictDetail(field)
 
+  const canOverride =
+    (status === 'ready_for_review' || status === 'extraction_failed') &&
+    field.effective_verdict !== 'not_applicable'
+
   return (
-    <tr className={rowClass} data-row-state={color}>
-      <td className={styles.cellLabel}>{label}</td>
-      <td className={styles.cellValue}>{renderValue(field, 'extracted')}</td>
-      <td className={styles.cellValue}>{renderValue(field, 'expected')}</td>
-      <td className={styles.cellConfidence}>
-        <ConfidenceBadge confidence={resolvedConfidence} />
-      </td>
-      <td className={styles.cellVerdict}>
-        <span className={`${styles.verdictPill} ${pillClass(field)}`}>
-          {verdictLabel(field)}
-        </span>
-        {field.override && (
-          <span className={styles.originalVerdict}>
-            (model said: {field.override.original_verdict})
+    <>
+      <tr className={rowClass} data-row-state={color}>
+        <td className={styles.cellLabel}>{label}</td>
+        <td className={styles.cellValue}>{renderValue(field, 'extracted')}</td>
+        <td className={styles.cellValue}>{renderValue(field, 'expected')}</td>
+        <td className={styles.cellConfidence}>
+          <ConfidenceBadge confidence={resolvedConfidence} />
+        </td>
+        <td className={styles.cellVerdict}>
+          <span className={`${styles.verdictPill} ${pillClass(field)}`}>
+            {field.override && field.effective_verdict !== 'not_applicable' ? (
+              <>
+                <span className={styles.pillModelVerdict}>
+                  {capitalize(field.override.original_verdict)}
+                </span>
+                <span className={styles.pillArrow} aria-hidden="true">
+                  {' → '}
+                </span>
+                {verdictLabel(field)}
+              </>
+            ) : (
+              verdictLabel(field)
+            )}
           </span>
-        )}
-        {detail && <div className={styles.detail}>{detail}</div>}
-      </td>
-    </tr>
+          {detail && <div className={styles.detail}>{detail}</div>}
+        </td>
+        <td className={styles.cellActions}>
+          <button
+            type="button"
+            className={styles.linkButton}
+            onClick={onOpenImage}
+          >
+            View image
+          </button>
+          {canOverride && (
+            <button
+              type="button"
+              className={styles.linkButton}
+              onClick={() => setShowOverrideDialog(true)}
+            >
+              Override
+            </button>
+          )}
+        </td>
+      </tr>
+      {showOverrideDialog && (
+        <OverrideDialog
+          submissionId={submissionId}
+          field={field.field}
+          fieldLabel={label}
+          modelVerdict={field.model_verdict}
+          currentOverride={field.override ?? null}
+          onClose={() => setShowOverrideDialog(false)}
+          onSaved={() => {
+            setShowOverrideDialog(false)
+            onOverrideChanged()
+          }}
+        />
+      )}
+    </>
   )
 }

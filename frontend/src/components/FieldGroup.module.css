@@ -25,19 +25,22 @@
 }
 
 .colField {
-  width: 16%;
+  width: 14%;
 }
 .colExtracted {
-  width: 27%;
+  width: 24%;
 }
 .colExpected {
-  width: 27%;
+  width: 24%;
 }
 .colConfidence {
-  width: 12%;
+  width: 10%;
 }
 .colVerdict {
-  width: 18%;
+  width: 16%;
+}
+.colActions {
+  width: 12%;
 }
 
 .headerRow {
