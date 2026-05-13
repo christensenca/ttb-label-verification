@@ -391,13 +391,6 @@ function BatchPanel({ onAdded, onDismiss }: PanelProps) {
             onChange={setCsvFiles}
             required
           />
-          <button
-            type="button"
-            className={styles.linkButton}
-            onClick={downloadTemplate}
-          >
-            Download CSV template
-          </button>
         </div>
       </div>
       {error && <div className={styles.error}>{error}</div>}
@@ -422,6 +415,13 @@ function BatchPanel({ onAdded, onDismiss }: PanelProps) {
         </div>
       )}
       <div className={styles.actions}>
+        <button
+          type="button"
+          className={styles.linkButton}
+          onClick={downloadTemplate}
+        >
+          Download CSV template
+        </button>
         <div className={styles.actionsRight}>
           <button
             type="submit"

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '../api/client'
@@ -9,6 +9,7 @@ import ExtractionFailedBanner from '../components/ExtractionFailedBanner'
 import FieldGroup from '../components/FieldGroup'
 import ImageLightbox from '../components/ImageLightbox'
 import { STATUS_LABEL } from '../components/QueueTable'
+import ReviewToolbar from '../components/ReviewToolbar'
 
 type Detail = components['schemas']['SubmissionDetailOut']
 
@@ -89,9 +90,7 @@ export default function ReviewPage() {
 
   return (
     <section className="review-page">
-      <p>
-        <Link to="/">← Back to queue</Link>
-      </p>
+      <ReviewToolbar currentId={detail.id} />
       {detail.extraction?.error && (
         <ExtractionFailedBanner error={detail.extraction.error} />
       )}

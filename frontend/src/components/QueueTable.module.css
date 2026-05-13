@@ -24,6 +24,11 @@
 .row {
   border-bottom: 1px solid #eee;
   vertical-align: middle;
+  transition: background 600ms ease;
+}
+
+.rowFocused {
+  background: var(--accent-bg);
 }
 
 .row td {

@@ -1,22 +1,29 @@
 import { Outlet, Route, Routes } from 'react-router-dom'
 
-import SharedDemoBanner from './components/SharedDemoBanner'
 import QueuePage from './pages/QueuePage'
 import ReviewPage from './pages/ReviewPage'
 
 function Layout() {
   return (
     <div className="app-shell">
-      <SharedDemoBanner />
-      <header className="app-header">
-        <h1>TTB Label Verify</h1>
-        <span className="app-tagline">
-          AI-assisted label compliance review · prototype
-        </span>
+      <header className="app-topbar">
+        <div className="app-topbar-inner">
+          <span className="app-brand">LabelGuard</span>
+          <span className="app-subtitle">AI-assisted TTB review</span>
+        </div>
       </header>
-      <main className="app-main">
+      <main className="app-content">
         <Outlet />
       </main>
+      <footer className="app-footer">
+        <div className="app-footer-inner">
+          <span>
+            Shared demo instance — submissions, decisions, and overrides are
+            visible to everyone using this URL.
+          </span>
+          <span className="app-footer-tag">Prototype</span>
+        </div>
+      </footer>
     </div>
   )
 }

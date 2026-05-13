@@ -59,7 +59,7 @@ export default function QueueTable({ items }: { items: SubmissionListItem[] }) {
       </thead>
       <tbody>
         {items.map((item) => (
-          <tr key={item.id} className={styles.row}>
+          <tr key={item.id} id={`queue-row-${item.id}`} className={styles.row}>
             <td>
               <img
                 src={item.thumbnail_url}

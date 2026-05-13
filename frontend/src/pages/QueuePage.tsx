@@ -1,9 +1,12 @@
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '../api/client'
 import type { components } from '../api/generated'
 import AddSubmissionForm from '../components/AddSubmissionForm'
 import QueueTable from '../components/QueueTable'
+import queueTableStyles from '../components/QueueTable.module.css'
 import ResetDemoButton from '../components/ResetDemoButton'
 import styles from './QueuePage.module.css'
 
@@ -14,6 +17,8 @@ const QUEUE_KEY = ['queue'] as const
 
 export default function QueuePage() {
   const queryClient = useQueryClient()
+  const location = useLocation()
+  const focusId = (location.state as { focusId?: string } | null)?.focusId
 
   const queueQuery = useQuery<SubmissionListItem[]>({
     queryKey: QUEUE_KEY,
@@ -23,6 +28,27 @@ export default function QueuePage() {
       return items.some((i) => i.status === 'processing') ? 1500 : false
     },
   })
+
+  useEffect(() => {
+    if (!queueQuery.isSuccess) return
+    if (focusId) {
+      const el = document.getElementById(`queue-row-${focusId}`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.classList.add(queueTableStyles.rowFocused)
+        const timer = window.setTimeout(() => {
+          el.classList.remove(queueTableStyles.rowFocused)
+        }, 1400)
+        window.history.replaceState({}, '')
+        return () => window.clearTimeout(timer)
+      }
+    }
+    if (location.state) {
+      const section = document.getElementById('queue-section')
+      section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      window.history.replaceState({}, '')
+    }
+  }, [focusId, queueQuery.isSuccess, location.state])
 
   const startMutation = useMutation({
     mutationFn: () => api.post<StartOut>('/api/submissions/start'),
@@ -50,7 +76,7 @@ export default function QueuePage() {
         />
       </section>
 
-      <section className={styles.card}>
+      <section id="queue-section" className={styles.card}>
         <div className={styles.cardHeader}>
           <div className={styles.cardHeaderText}>
             <h2>Queue</h2>
