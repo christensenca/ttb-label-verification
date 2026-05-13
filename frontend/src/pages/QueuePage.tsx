@@ -1,10 +1,10 @@
-import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '../api/client'
 import type { components } from '../api/generated'
 import AddSubmissionForm from '../components/AddSubmissionForm'
 import QueueTable from '../components/QueueTable'
+import styles from './QueuePage.module.css'
 
 type SubmissionListItem = components['schemas']['SubmissionListItem']
 type StartOut = components['schemas']['StartOut']
@@ -13,7 +13,6 @@ const QUEUE_KEY = ['queue'] as const
 
 export default function QueuePage() {
   const queryClient = useQueryClient()
-  const [isAddOpen, setIsAddOpen] = useState(false)
 
   const queueQuery = useQuery<SubmissionListItem[]>({
     queryKey: QUEUE_KEY,
@@ -34,46 +33,62 @@ export default function QueuePage() {
   const processingCount = items.filter((i) => i.status === 'processing').length
 
   return (
-    <section className="queue-page">
-      <div className="queue-header">
-        <h2>Queue</h2>
-        <div className="queue-actions">
-          <button
-            type="button"
-            className="add-button"
-            onClick={() => setIsAddOpen((v) => !v)}
-            aria-expanded={isAddOpen}
-          >
-            {isAddOpen ? 'Cancel' : 'Add my own…'}
-          </button>
-          <button
-            type="button"
-            className="start-button"
-            disabled={loadedCount === 0 || startMutation.isPending}
-            onClick={() => startMutation.mutate()}
-          >
-            {startMutation.isPending
-              ? 'Starting…'
-              : loadedCount > 0
-                ? `Start (${loadedCount})`
-                : 'Start'}
-          </button>
-          {processingCount > 0 && (
-            <span className="queue-status">{processingCount} processing…</span>
-          )}
+    <div className={styles.page}>
+      <section className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderText}>
+            <h2>Add submissions</h2>
+            <span className={styles.cardSubtitle}>
+              Upload a single label with expected values, or batch-upload a CSV
+              manifest with matching images.
+            </span>
+          </div>
         </div>
-      </div>
-      {isAddOpen && (
         <AddSubmissionForm
           onAdded={() => queryClient.invalidateQueries({ queryKey: QUEUE_KEY })}
-          onDismiss={() => setIsAddOpen(false)}
         />
-      )}
-      {queueQuery.isLoading && <p>Loading queue…</p>}
-      {queueQuery.isError && (
-        <p className="error">Failed to load queue: {String(queueQuery.error)}</p>
-      )}
-      {queueQuery.isSuccess && <QueueTable items={items} />}
-    </section>
+      </section>
+
+      <section className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderText}>
+            <h2>Queue</h2>
+            <span className={styles.cardSubtitle}>
+              {loadedCount > 0
+                ? `${loadedCount} item${loadedCount === 1 ? '' : 's'} ready to run`
+                : 'No items waiting to run'}
+            </span>
+          </div>
+          <div className={styles.cardActions}>
+            {processingCount > 0 && (
+              <span className={styles.statusNote}>
+                {processingCount} processing…
+              </span>
+            )}
+            <button
+              type="button"
+              className={styles.startButton}
+              disabled={loadedCount === 0 || startMutation.isPending}
+              onClick={() => startMutation.mutate()}
+            >
+              {startMutation.isPending
+                ? 'Running…'
+                : loadedCount > 0
+                  ? `Run ${loadedCount}`
+                  : 'Run'}
+            </button>
+          </div>
+        </div>
+        {queueQuery.isLoading && (
+          <div className={styles.queueState}>Loading queue…</div>
+        )}
+        {queueQuery.isError && (
+          <div className={`${styles.queueState} ${styles.error}`}>
+            Failed to load queue: {String(queueQuery.error)}
+          </div>
+        )}
+        {queueQuery.isSuccess && <QueueTable items={items} />}
+      </section>
+    </div>
   )
 }

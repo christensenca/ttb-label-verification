@@ -54,12 +54,45 @@
   width: 1126px;
   max-width: 100%;
   margin: 0 auto;
-  text-align: center;
+  text-align: left;
   border-inline: 1px solid var(--border);
   min-height: 100svh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+
+.app-header {
+  padding: 24px 32px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-header h1 {
+  font-size: 28px;
+  letter-spacing: -0.4px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.app-header .app-tagline {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.app-main {
+  padding: 24px 32px 48px;
+  flex: 1;
+}
+
+@media (max-width: 720px) {
+  .app-header,
+  .app-main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 
 body {
@@ -74,22 +107,17 @@ h2 {
 }
 
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  font-size: 28px;
+  letter-spacing: -0.4px;
+  margin: 0;
+  font-weight: 600;
 }
 h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+  font-size: 18px;
+  line-height: 120%;
+  letter-spacing: -0.1px;
+  margin: 0;
+  font-weight: 600;
 }
 p {
   margin: 0;

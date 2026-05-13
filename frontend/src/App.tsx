@@ -10,6 +10,9 @@ function Layout() {
       <SharedDemoBanner />
       <header className="app-header">
         <h1>TTB Label Verify</h1>
+        <span className="app-tagline">
+          AI-assisted label compliance review · prototype
+        </span>
       </header>
       <main className="app-main">
         <Outlet />

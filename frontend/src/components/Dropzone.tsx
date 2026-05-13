@@ -1,5 +1,5 @@
-import { useId, useRef, useState } from 'react'
-import type { DragEvent, MouseEvent } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import type { DragEvent } from 'react'
 
 import styles from './Dropzone.module.css'
 
@@ -21,6 +21,10 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function isImage(file: File): boolean {
+  return file.type.startsWith('image/')
+}
+
 export default function Dropzone({
   headline,
   subtext,
@@ -36,6 +40,19 @@ export default function Dropzone({
   // Counter handles dragenter/leave fires from descendant elements.
   const dragDepth = useRef(0)
   const [isDragging, setIsDragging] = useState(false)
+
+  // Generate preview URLs for image files; revoke on cleanup or replacement.
+  const previews = useMemo(
+    () => files.map((f) => (isImage(f) ? URL.createObjectURL(f) : null)),
+    [files],
+  )
+  useEffect(() => {
+    return () => {
+      previews.forEach((url) => {
+        if (url) URL.revokeObjectURL(url)
+      })
+    }
+  }, [previews])
 
   function applyIncoming(list: FileList | File[]) {
     let next = Array.from(list)
@@ -70,14 +87,24 @@ export default function Dropzone({
     }
   }
 
-  function clear(e: MouseEvent<HTMLButtonElement>) {
-    e.stopPropagation()
+  function openPicker() {
+    inputRef.current?.click()
+  }
+
+  function removeAt(i: number) {
+    const next = files.filter((_, idx) => idx !== i)
+    onChange(next)
+    if (next.length === 0 && inputRef.current) inputRef.current.value = ''
+  }
+
+  function clearAll() {
     onChange([])
     if (inputRef.current) inputRef.current.value = ''
   }
 
   const hasFiles = files.length > 0
   const showRequired = required && !hasFiles
+  const isSingleMode = !multiple
 
   return (
     <div
@@ -93,14 +120,14 @@ export default function Dropzone({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={() => {
-        if (!hasFiles) inputRef.current?.click()
+        if (!hasFiles) openPicker()
       }}
       role="button"
       tabIndex={hasFiles ? -1 : 0}
       onKeyDown={(e) => {
         if (!hasFiles && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault()
-          inputRef.current?.click()
+          openPicker()
         }
       }}
     >
@@ -114,11 +141,10 @@ export default function Dropzone({
         onChange={(e) => {
           if (e.target.files) applyIncoming(e.target.files)
         }}
-        // Keep `required` only when the user hasn't supplied files yet so
-        // browser-native form validation triggers on submit.
         required={showRequired}
         aria-label={headline}
       />
+
       {!hasFiles && (
         <>
           <div className={styles.icon} aria-hidden>
@@ -128,7 +154,16 @@ export default function Dropzone({
           <div className={styles.subtext}>{subtext}</div>
         </>
       )}
-      {hasFiles && (
+
+      {hasFiles && isSingleMode && (
+        <SinglePopulated
+          file={files[0]}
+          previewUrl={previews[0]}
+          onReplace={openPicker}
+        />
+      )}
+
+      {hasFiles && !isSingleMode && (
         <>
           <div className={styles.populatedHeader}>
             <span>
@@ -139,26 +174,36 @@ export default function Dropzone({
               className={styles.actionButton}
               onClick={(e) => {
                 e.stopPropagation()
-                inputRef.current?.click()
+                openPicker()
               }}
             >
-              {multiple ? 'Add more…' : 'Replace…'}
+              Add more…
             </button>
           </div>
           <ul className={styles.fileList}>
             {files.map((file, i) => (
               <li key={`${file.name}-${i}`} className={styles.fileItem}>
+                {previews[i] ? (
+                  <img
+                    src={previews[i] ?? undefined}
+                    alt=""
+                    className={styles.thumb}
+                  />
+                ) : (
+                  <span className={styles.thumbPlaceholder} aria-hidden>
+                    📄
+                  </span>
+                )}
                 <span className={styles.fileName} title={file.name}>
                   {file.name}
                 </span>
                 <span className={styles.fileSize}>{formatBytes(file.size)}</span>
                 <button
                   type="button"
-                  className={styles.actionButton}
+                  className={styles.removeIcon}
                   onClick={(e) => {
                     e.stopPropagation()
-                    const next = files.filter((_, idx) => idx !== i)
-                    onChange(next)
+                    removeAt(i)
                   }}
                   aria-label={`Remove ${file.name}`}
                 >
@@ -167,17 +212,63 @@ export default function Dropzone({
               </li>
             ))}
           </ul>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div className={styles.multiFooter}>
             <button
               type="button"
               className={styles.actionButton}
-              onClick={clear}
+              onClick={(e) => {
+                e.stopPropagation()
+                clearAll()
+              }}
             >
               Clear all
             </button>
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+function SinglePopulated({
+  file,
+  previewUrl,
+  onReplace,
+}: {
+  file: File
+  previewUrl: string | null
+  onReplace: () => void
+}) {
+  return (
+    <div className={styles.singlePopulated}>
+      <div className={styles.singlePreview}>
+        {previewUrl ? (
+          <img src={previewUrl} alt={file.name} />
+        ) : (
+          <div className={styles.singleNonImage}>
+            <span className={styles.docIcon} aria-hidden>
+              📄
+            </span>
+            <span>No preview available</span>
+          </div>
+        )}
+      </div>
+      <div className={styles.singleMeta}>
+        <span className={styles.singleFilename} title={file.name}>
+          {file.name}
+        </span>
+        <span className={styles.singleSize}>{formatBytes(file.size)}</span>
+      </div>
+      <button
+        type="button"
+        className={styles.singleReplace}
+        onClick={(e) => {
+          e.stopPropagation()
+          onReplace()
+        }}
+      >
+        Replace
+      </button>
     </div>
   )
 }

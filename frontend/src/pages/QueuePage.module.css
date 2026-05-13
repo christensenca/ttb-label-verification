@@ -1,0 +1,92 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 17, 21, 0.04);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: #fcfbf7;
+}
+
+.cardHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cardHeaderText h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.cardSubtitle {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.statusNote {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.startButton {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.startButton:not(:disabled):hover {
+  background: #9128e6;
+  border-color: #9128e6;
+}
+
+.startButton:disabled {
+  background: #efedf2;
+  border-color: var(--border);
+  color: #9a96a3;
+  cursor: not-allowed;
+}
+
+.queueState {
+  padding: 24px 20px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.queueState.error {
+  color: #b00020;
+}
