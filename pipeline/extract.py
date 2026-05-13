@@ -3,7 +3,7 @@
 Single structured-output call per label via OpenAI vision through OpenRouter.
 See decision #2 in docs/architecture-decisions.md.
 
-This experimental extractor asks the model for the target fields directly
+This label extractor asks the model for the target fields directly
 instead of requiring full front/back transcriptions first. Each raw text field
 comes back with a readability confidence, then a tiny adapter unwraps the
 response into the existing flat label shape used by the comparator.
@@ -51,8 +51,8 @@ class FieldExtraction(BaseModel):
     )
 
 
-class OneShotExtractedLabel(BaseModel):
-    """Direct model response for one-shot extraction.
+class LabelExtractionResponse(BaseModel):
+    """Direct model response for label extraction.
 
     Text-like values are wrapped with readability confidence. Simple booleans
     stay simple so the adapter does not invent confidence for non-text fields.
@@ -230,17 +230,17 @@ WRAPPED_FIELDS = (
 )
 
 
-def unwrap_one_shot_label(
-    one_shot: OneShotExtractedLabel,
+def unwrap_label_extraction_response(
+    response: LabelExtractionResponse,
 ) -> tuple[ExtractedLabel, dict[str, ExtractionConfidence]]:
-    """Adapt one-shot field wrappers into the existing flat label shape."""
-    flat = {name: getattr(one_shot, name).value for name in WRAPPED_FIELDS}
-    confidence = {name: getattr(one_shot, name).extraction_confidence for name in WRAPPED_FIELDS}
+    """Adapt wrapped response fields into the existing flat label shape."""
+    flat = {name: getattr(response, name).value for name in WRAPPED_FIELDS}
+    confidence = {name: getattr(response, name).extraction_confidence for name in WRAPPED_FIELDS}
     label = ExtractedLabel(
         **flat,
-        is_imported=one_shot.is_imported,
-        government_warning_bold=one_shot.government_warning_bold,
-        government_warning_body_bold=one_shot.government_warning_body_bold,
+        is_imported=response.is_imported,
+        government_warning_bold=response.government_warning_bold,
+        government_warning_body_bold=response.government_warning_body_bold,
     )
     return label, confidence
 
@@ -288,17 +288,17 @@ def extract(
                 ],
             },
         ],
-        response_format=OneShotExtractedLabel,
+        response_format=LabelExtractionResponse,
         temperature=temperature,
         max_tokens=8192,
     )
     latency_ms = (time.perf_counter() - start) * 1000
 
-    parsed_one_shot = response.choices[0].message.parsed
-    if parsed_one_shot is None:
+    parsed_response = response.choices[0].message.parsed
+    if parsed_response is None:
         raw = response.choices[0].message.content
         raise RuntimeError(f"Model returned no parsed output. Raw content: {raw!r}")
-    parsed, field_confidence = unwrap_one_shot_label(parsed_one_shot)
+    parsed, field_confidence = unwrap_label_extraction_response(parsed_response)
 
     usage = response.usage
     return ExtractionResult(

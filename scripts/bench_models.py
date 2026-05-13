@@ -26,7 +26,7 @@ from pipeline.extract import extract
 load_dotenv()
 
 MODELS = [
-    "google/gemini-3.1-pro-preview",  # best one-shot extraction candidate so far
+    "google/gemini-3.1-pro-preview",  # best label extraction candidate so far
     # Faster/lower-cost comparison:
     # "google/gemini-3.1-flash-lite",
     # Capability-ceiling comparisons:

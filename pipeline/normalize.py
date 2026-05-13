@@ -294,7 +294,7 @@ def parse_net_contents(s: str | None) -> float | None:
 def parse_alcohol_content(value) -> float | None:
     """Parse an alcohol-content extraction into ABV percentage points.
 
-    Accepts numeric values from the older extractor and raw one-shot strings
+    Accepts numeric values from the older extractor and raw extracted strings
     such as "40% Alc./Vol.", "ALC. 45% BY VOL.", "Alcohol 44% by volume",
     and "48.28 ALC/VOL". Deliberately does not convert proof to ABV; proof-only
     strings return None so extraction/comparison can surface the missing ABV.

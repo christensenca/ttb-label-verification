@@ -1,7 +1,7 @@
 """Unit tests for extraction response shaping.
 
 These tests stay intentionally below the live model boundary. They verify
-that one-shot structured responses can be adapted into the existing flat
+that structured label extraction responses can be adapted into the existing flat
 label shape without sneaking comparison normalization into extraction.
 """
 
@@ -11,8 +11,8 @@ from pipeline.extract import (
     DEFAULT_MODEL,
     SYSTEM_PROMPT,
     FieldExtraction,
-    OneShotExtractedLabel,
-    unwrap_one_shot_label,
+    LabelExtractionResponse,
+    unwrap_label_extraction_response,
 )
 
 
@@ -20,8 +20,8 @@ def _field(value: str | None, confidence: str = "hi") -> FieldExtraction:
     return FieldExtraction(value=value, extraction_confidence=confidence)
 
 
-def test_unwrap_one_shot_label_flattens_values_and_preserves_confidence():
-    one_shot = OneShotExtractedLabel(
+def test_unwrap_label_extraction_response_flattens_values_and_preserves_confidence():
+    response = LabelExtractionResponse(
         brand=_field("GRAY WHALE", "hi"),
         class_type=_field("GIN", "hi"),
         alcohol_content=_field("43% ALC./VOL.", "med"),
@@ -35,7 +35,7 @@ def test_unwrap_one_shot_label_flattens_values_and_preserves_confidence():
         government_warning_body_bold=False,
     )
 
-    label, confidence = unwrap_one_shot_label(one_shot)
+    label, confidence = unwrap_label_extraction_response(response)
 
     assert label.model_dump() == {
         "brand": "GRAY WHALE",
@@ -62,8 +62,8 @@ def test_unwrap_one_shot_label_flattens_values_and_preserves_confidence():
     }
 
 
-def test_unwrap_one_shot_label_does_not_normalize_or_parse_values():
-    one_shot = OneShotExtractedLabel(
+def test_unwrap_label_extraction_response_does_not_normalize_or_parse_values():
+    response = LabelExtractionResponse(
         brand=_field("  The Maker's Mark Distillery Inc.  ", "med"),
         class_type=_field("KENTUCKY\nSTRAIGHT BOURBON WHISKY", "hi"),
         alcohol_content=_field("ALC. 45% BY VOL.", "hi"),
@@ -77,7 +77,7 @@ def test_unwrap_one_shot_label_does_not_normalize_or_parse_values():
         government_warning_body_bold=None,
     )
 
-    label, _ = unwrap_one_shot_label(one_shot)
+    label, _ = unwrap_label_extraction_response(response)
 
     assert label.brand == "  The Maker's Mark Distillery Inc.  "
     assert label.class_type == "KENTUCKY\nSTRAIGHT BOURBON WHISKY"
