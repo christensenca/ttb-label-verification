@@ -38,13 +38,13 @@ Per [plan.md § Project Structure](plan.md): web app with Python library at
 
 **Purpose**: Project initialization, dependency declarations, build scaffolding.
 
-- [ ] T001 Add backend dependencies to `pyproject.toml`: `fastapi`, `uvicorn[standard]`, `sqlalchemy>=2.0`, `alembic`, `psycopg[binary,pool]`, `pydantic-settings`, `python-multipart`, `httpx` (for TestClient). Update `uv.lock` via `uv sync`.
-- [ ] T002 [P] Create `.env.example` at repo root documenting every env var per [quickstart.md § Environment](quickstart.md): `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `EXTRACTION_CONCURRENCY`, `DATABASE_URL`, `IMAGE_STORAGE_DIR`, `CORS_ALLOWED_ORIGINS`.
-- [ ] T003 [P] Create `app/` package scaffold: `app/__init__.py`, `app/api/__init__.py`, `app/db/__init__.py`, `app/services/__init__.py`.
-- [ ] T004 [P] Scaffold `frontend/` with Vite + React + TypeScript: `cd /Users/cadechristensen/Source/ttb-label-verfication && pnpm create vite frontend --template react-ts`. Add deps: `react-router-dom`, `@tanstack/react-query`, `openapi-typescript` (dev). Commit `frontend/package.json`, `frontend/vite.config.ts`, `frontend/tsconfig.json`.
-- [ ] T005 [P] Create multi-stage `Dockerfile` at repo root per [research.md R6](research.md): stage 1 `node:20-alpine` builds `frontend/dist/`; stage 2 `python:3.11-slim` installs `uv` + Python deps, copies `pipeline/`, `app/`, `frontend/dist/`. CMD = `docker-entrypoint.sh`.
-- [ ] T006 [P] Create `docker-entrypoint.sh` at repo root: runs `alembic upgrade head`, then `python -m app.db.seed`, then `exec uvicorn app.main:app --host 0.0.0.0 --port 8000`. Make executable (`chmod +x`).
-- [ ] T007 Create `app/config.py` with `pydantic_settings.BaseSettings` reading every env var listed in T002. Single source of truth for config; nothing else reads `os.environ` directly.
+- [X] T001 Add backend dependencies to `pyproject.toml`: `fastapi`, `uvicorn[standard]`, `sqlalchemy>=2.0`, `alembic`, `psycopg[binary,pool]`, `pydantic-settings`, `python-multipart`, `httpx` (for TestClient). Update `uv.lock` via `uv sync`.
+- [X] T002 [P] Create `.env.example` at repo root documenting every env var per [quickstart.md § Environment](quickstart.md): `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `EXTRACTION_CONCURRENCY`, `DATABASE_URL`, `IMAGE_STORAGE_DIR`, `CORS_ALLOWED_ORIGINS`.
+- [X] T003 [P] Create `app/` package scaffold: `app/__init__.py`, `app/api/__init__.py`, `app/db/__init__.py`, `app/services/__init__.py`.
+- [X] T004 [P] Scaffold `frontend/` with Vite + React + TypeScript: `cd /Users/cadechristensen/Source/ttb-label-verfication && pnpm create vite frontend --template react-ts`. Add deps: `react-router-dom`, `@tanstack/react-query`, `openapi-typescript` (dev). Commit `frontend/package.json`, `frontend/vite.config.ts`, `frontend/tsconfig.json`.
+- [X] T005 [P] Create multi-stage `Dockerfile` at repo root per [research.md R6](research.md): stage 1 `node:20-alpine` builds `frontend/dist/`; stage 2 `python:3.11-slim` installs `uv` + Python deps, copies `pipeline/`, `app/`, `frontend/dist/`. CMD = `docker-entrypoint.sh`.
+- [X] T006 [P] Create `docker-entrypoint.sh` at repo root: runs `alembic upgrade head`, then `python -m app.db.seed`, then `exec uvicorn app.main:app --host 0.0.0.0 --port 8000`. Make executable (`chmod +x`).
+- [X] T007 Create `app/config.py` with `pydantic_settings.BaseSettings` reading every env var listed in T002. Single source of truth for config; nothing else reads `os.environ` directly.
 
 ---
 
