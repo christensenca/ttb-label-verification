@@ -55,20 +55,20 @@ test harness. Must complete before ANY user story phase.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T008 Implement `app/db/session.py`: SQLAlchemy 2.x engine from `DATABASE_URL`, sessionmaker, `get_db` FastAPI dependency.
-- [ ] T009 Implement `app/db/models.py`: ORM classes `Submission`, `Extraction`, `Comparison`, `FieldOverride`, `Review` per [data-model.md](data-model.md). Include `__table_args__` for indexes.
-- [ ] T010 Initialize Alembic: run `alembic init app/alembic`; edit `app/alembic/env.py` to import `app.db.models.Base.metadata` and read `DATABASE_URL` from settings.
-- [ ] T011 Author the initial Alembic migration in `app/alembic/versions/` creating all 5 tables and every index listed in [data-model.md § Index summary](data-model.md). Verify with `alembic upgrade head` against a local Postgres.
-- [ ] T012 [P] Implement `app/services/storage.py`: `ImageStore` Protocol (`put`, `open`, `delete`) and `FilesystemImageStore(root: Path)` using `IMAGE_STORAGE_DIR`; keys are content-addressed `sha256:<hex>.<ext>` per [research.md R5](research.md).
-- [ ] T013 [P] Implement `app/api/schemas.py`: Pydantic DTOs for `ExpectedValues` (with `is_imported`/`country_of_origin` cross-field validation), `SubmissionListItem`, `FieldRowOut`, `FieldGroupOut`, `ExtractionOut`, `ReviewOut`, `SubmissionDetailOut`, `OverrideIn`/`OverrideOut`, `DecisionIn`/`DecisionOut`, `AdminResetIn`.
-- [ ] T014 Implement `app/main.py`: FastAPI instance, CORS middleware reading `CORS_ALLOWED_ORIGINS`, `/healthz` endpoint, mount `frontend/dist/` at `/` via `StaticFiles` with SPA fallback for non-`/api/*` paths, `Cache-Control: no-store` middleware for `/api/*`.
-- [ ] T015 Implement `app/main.py` lifespan: on startup, call the rescue routine in `app/services/processor.py` that flips any `status='processing'` submissions to `status='extraction_failed'` with `error='interrupted'`, then call `app.db.seed.run_seed()`.
-- [ ] T016 [P] Implement `app/db/seed.py`: idempotent fixture seeder reading `test_data/expected/*.json` + `test_data/images/*.jpg`. Inserts submission rows with `is_fixture=True` and `status='loaded'`; copies images via `ImageStore.put`. Skips if any `is_fixture=True` row already exists.
-- [ ] T017 [P] Frontend: configure `frontend/src/main.tsx` with `BrowserRouter` and `QueryClientProvider`; create `frontend/src/App.tsx` with layout shell, `<Outlet/>`, and routes for `/` (QueuePage placeholder) and `/items/:id` (ReviewPage placeholder).
-- [ ] T018 [P] Frontend: create `frontend/src/components/SharedDemoBanner.tsx` (persistent banner per FR-025) and include in `App.tsx`.
-- [ ] T019 [P] Frontend: add `gen:api` script to `frontend/package.json` running `openapi-typescript http://localhost:8000/openapi.json -o src/api/generated.ts`. Commit a placeholder `generated.ts` to keep imports happy until the backend is up.
-- [ ] T020 [P] Frontend: implement `frontend/src/api/client.ts` — thin fetch wrapper, typed against `generated.ts`. Surface a `useApi()` hook returning `{get, post, del}` helpers that throw on non-2xx.
-- [ ] T021 Extend `tests/conftest.py` with: `TestClient(app)` fixture, a `db_session` fixture using a transactional rollback per test, and a `mock_extract` fixture that monkeypatches `pipeline.extract.extract` to return a canned `ExtractionResult`. Reuse the cached fixtures in `tests/fixtures/extractions.json` where helpful.
+- [X] T008 Implement `app/db/session.py`: SQLAlchemy 2.x engine from `DATABASE_URL`, sessionmaker, `get_db` FastAPI dependency.
+- [X] T009 Implement `app/db/models.py`: ORM classes `Submission`, `Extraction`, `Comparison`, `FieldOverride`, `Review` per [data-model.md](data-model.md). Include `__table_args__` for indexes.
+- [X] T010 Initialize Alembic: run `alembic init app/alembic`; edit `app/alembic/env.py` to import `app.db.models.Base.metadata` and read `DATABASE_URL` from settings.
+- [X] T011 Author the initial Alembic migration in `app/alembic/versions/` creating all 5 tables and every index listed in [data-model.md § Index summary](data-model.md). Verify with `alembic upgrade head` against a local Postgres.
+- [X] T012 [P] Implement `app/services/storage.py`: `ImageStore` Protocol (`put`, `open`, `delete`) and `FilesystemImageStore(root: Path)` using `IMAGE_STORAGE_DIR`; keys are content-addressed `sha256:<hex>.<ext>` per [research.md R5](research.md).
+- [X] T013 [P] Implement `app/api/schemas.py`: Pydantic DTOs for `ExpectedValues` (with `is_imported`/`country_of_origin` cross-field validation), `SubmissionListItem`, `FieldRowOut`, `FieldGroupOut`, `ExtractionOut`, `ReviewOut`, `SubmissionDetailOut`, `OverrideIn`/`OverrideOut`, `DecisionIn`/`DecisionOut`, `AdminResetIn`.
+- [X] T014 Implement `app/main.py`: FastAPI instance, CORS middleware reading `CORS_ALLOWED_ORIGINS`, `/healthz` endpoint, mount `frontend/dist/` at `/` via `StaticFiles` with SPA fallback for non-`/api/*` paths, `Cache-Control: no-store` middleware for `/api/*`.
+- [X] T015 Implement `app/main.py` lifespan: on startup, call the rescue routine in `app/services/processor.py` that flips any `status='processing'` submissions to `status='extraction_failed'` with `error='interrupted'`, then call `app.db.seed.run_seed()`.
+- [X] T016 [P] Implement `app/db/seed.py`: idempotent fixture seeder reading `test_data/expected/*.json` + `test_data/images/*.jpg`. Inserts submission rows with `is_fixture=True` and `status='loaded'`; copies images via `ImageStore.put`. Skips if any `is_fixture=True` row already exists.
+- [X] T017 [P] Frontend: configure `frontend/src/main.tsx` with `BrowserRouter` and `QueryClientProvider`; create `frontend/src/App.tsx` with layout shell, `<Outlet/>`, and routes for `/` (QueuePage placeholder) and `/items/:id` (ReviewPage placeholder).
+- [X] T018 [P] Frontend: create `frontend/src/components/SharedDemoBanner.tsx` (persistent banner per FR-025) and include in `App.tsx`.
+- [X] T019 [P] Frontend: add `gen:api` script to `frontend/package.json` running `openapi-typescript http://localhost:8000/openapi.json -o src/api/generated.ts`. Commit a placeholder `generated.ts` to keep imports happy until the backend is up.
+- [X] T020 [P] Frontend: implement `frontend/src/api/client.ts` — thin fetch wrapper, typed against `generated.ts`. Surface a `useApi()` hook returning `{get, post, del}` helpers that throw on non-2xx.
+- [X] T021 Extend `tests/conftest.py` with: `TestClient(app)` fixture, a `db_session` fixture using a transactional rollback per test, and a `mock_extract` fixture that monkeypatches `pipeline.extract.extract` to return a canned `ExtractionResult`. Reuse the cached fixtures in `tests/fixtures/extractions.json` where helpful.
 
 **Checkpoint**: `uv run uvicorn app.main:app` boots; `/healthz` returns 200; `/openapi.json` is served; seed creates 7 fixture rows; frontend dev server renders the shell with banner and routes.
 

@@ -34,3 +34,6 @@ ClAUDE.md
 # Build artifacts
 dist/
 build/
+
+# Local runtime state (image storage volume, etc.)
+.local/
