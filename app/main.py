@@ -16,12 +16,20 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request, Response
+from dotenv import load_dotenv
+
+# Load .env into os.environ so pipeline.extract (which reads os.environ
+# directly per the tolerated deviation in plan.md) sees OPENROUTER_API_KEY.
+load_dotenv()
+
+from fastapi import FastAPI, Request, Response  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
+from app.api import decisions as decisions_api
+from app.api import submissions as submissions_api
 from app.config import get_settings
 from app.db.seed import run_seed
 from app.db.session import engine
@@ -70,6 +78,9 @@ def create_app() -> FastAPI:
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
         return response
+
+    app.include_router(submissions_api.router)
+    app.include_router(decisions_api.router)
 
     @app.get("/healthz", tags=["health"])
     def healthz() -> Response:
