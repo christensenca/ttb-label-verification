@@ -1,0 +1,330 @@
+.section {
+  margin-top: 28px;
+  text-align: left;
+  border: 1px solid #e5e4e7;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.heading {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #08060d;
+  background: #f4f3ec;
+  border-bottom: 1px solid #e5e4e7;
+  border-radius: 4px 4px 0 0;
+}
+
+.body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4a4855;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.textarea {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid #d8d6d0;
+  border-radius: 4px;
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.button {
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #d8d6d0;
+  background: #fff;
+  color: #4a4855;
+}
+
+.button:hover:not(:disabled) {
+  border-color: #aa3bff;
+  color: #aa3bff;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Soft-pill button family — dark text on a tinted background, matching the
+ * verdict pills in FieldRow.module.css. Easier to read than saturated fills. */
+
+.primary {
+  border-color: #a5d6a7;
+  background: #e8f5e9;
+  color: #1b5e20;
+  font-weight: 600;
+}
+
+.primary:hover:not(:disabled) {
+  background: #c8e6c9;
+  border-color: #66bb6a;
+  color: #1b5e20;
+}
+
+.danger {
+  border-color: #ef9a9a;
+  background: #ffebee;
+  color: #b71c1c;
+  font-weight: 600;
+}
+
+.danger:hover:not(:disabled) {
+  background: #ffcdd2;
+  border-color: #e57373;
+  color: #b71c1c;
+}
+
+.dangerSolid {
+  border-color: #ef9a9a;
+  background: #ffcdd2;
+  color: #b71c1c;
+  font-weight: 600;
+}
+
+.dangerSolid:hover:not(:disabled) {
+  background: #ef9a9a;
+  border-color: #e57373;
+  color: #8e1414;
+}
+
+.error {
+  padding: 8px 10px;
+  border: 1px solid #ef9a9a;
+  background: #ffebee;
+  color: #b00020;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.rejectPanel {
+  border: 1px solid #ef9a9a;
+  background: #fff8f8;
+  border-radius: 4px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rejectHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rejectTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #b71c1c;
+}
+
+.rejectHint {
+  margin: 0;
+  font-size: 13px;
+  color: #6b6375;
+  line-height: 1.4;
+}
+
+.candidateList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 12px;
+}
+
+@media (min-width: 900px) {
+  .candidateList {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .candidateList {
+    grid-template-columns: 1fr;
+  }
+}
+
+.candidateItem {
+  padding: 0;
+}
+
+.candidateLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #08060d;
+}
+
+.candidateLabel:hover {
+  background: #fff;
+}
+
+.candidateLabel input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #b71c1c;
+}
+
+.failingBadge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #b71c1c;
+  background: #ffcdd2;
+  padding: 2px 8px;
+  border-radius: 8px;
+  margin-left: auto;
+}
+
+/* --- Locked / recorded decision view --- */
+
+.locked .body {
+  background: #f9f8f4;
+}
+
+.lockedDecision {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.decisionPill {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 12px;
+  border-radius: 10px;
+}
+
+.decisionApproved {
+  color: #1b5e20;
+  background: #c8e6c9;
+}
+
+.decisionRejected {
+  color: #b71c1c;
+  background: #ffcdd2;
+}
+
+.lockedComment {
+  font-size: 14px;
+  color: #08060d;
+  line-height: 1.5;
+}
+
+.lockedCommentLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4a4855;
+  margin-right: 6px;
+}
+
+.reasonList {
+  margin: 4px 0 0;
+  padding-left: 20px;
+  font-size: 14px;
+  color: #08060d;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* --- Modal --- */
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 6px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px,
+    rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modalHeading {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #08060d;
+}
+
+.modalBody {
+  margin: 0;
+  font-size: 14px;
+  color: #6b6375;
+  line-height: 1.5;
+}
+
+.modalList {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  color: #08060d;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}

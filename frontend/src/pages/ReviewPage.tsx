@@ -4,12 +4,25 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '../api/client'
 import type { components } from '../api/generated'
-import DecisionPanel from '../components/DecisionPanel'
+import DecisionPanel, { type RejectionCandidate } from '../components/DecisionPanel'
 import ExtractionFailedBanner from '../components/ExtractionFailedBanner'
 import FieldGroup from '../components/FieldGroup'
 import { STATUS_LABEL } from '../components/QueueTable'
 
 type Detail = components['schemas']['SubmissionDetailOut']
+
+const FIELD_LABELS: Record<string, string> = {
+  brand: 'Brand',
+  class_type: 'Class / Type',
+  alcohol_content: 'Alcohol content',
+  net_contents: 'Net contents',
+  producer_name: 'Producer name',
+  producer_address: 'Producer address',
+  is_imported: 'Imported',
+  country_of_origin: 'Country of origin',
+  government_warning_text: 'Warning text',
+  government_warning_style: 'Bold formatting',
+}
 
 export default function ReviewPage() {
   const { id } = useParams<{ id: string }>()
@@ -29,17 +42,33 @@ export default function ReviewPage() {
 
   const detail = detailQuery.data
 
-  const failingComparisonIds = useMemo<string[]>(() => {
+  const candidates = useMemo<RejectionCandidate[]>(() => {
     if (!detail) return []
-    const ids: string[] = []
+    const out: RejectionCandidate[] = []
     for (const group of detail.groups ?? []) {
       for (const f of group.fields) {
-        if (f.effective_verdict === 'fail') {
-          ids.push(f.id)
-        }
+        // not_applicable rows aren't reviewable — drop them from the picker.
+        if (f.effective_verdict === 'not_applicable') continue
+        out.push({
+          id: f.id,
+          field: f.field,
+          label: FIELD_LABELS[f.field] ?? f.field,
+          isFailing: f.effective_verdict === 'fail',
+        })
       }
     }
-    return ids
+    return out
+  }, [detail])
+
+  const fieldLabelById = useMemo<Record<string, string>>(() => {
+    if (!detail) return {}
+    const map: Record<string, string> = {}
+    for (const group of detail.groups ?? []) {
+      for (const f of group.fields) {
+        map[f.id] = FIELD_LABELS[f.field] ?? f.field
+      }
+    }
+    return map
   }, [detail])
 
   if (!id) return <p>Missing submission id.</p>
@@ -112,7 +141,8 @@ export default function ReviewPage() {
             submissionId={detail.id}
             status={detail.status}
             review={detail.review ?? null}
-            failingComparisonIds={failingComparisonIds}
+            candidates={candidates}
+            fieldLabelById={fieldLabelById}
             onDecided={() => {
               queryClient.invalidateQueries({ queryKey: ['submission', id] })
               queryClient.invalidateQueries({ queryKey: ['queue'] })

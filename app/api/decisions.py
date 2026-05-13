@@ -5,9 +5,9 @@ Approve / reject an item. Decisions are final in v1.
 Reject contract per `contracts/api.md`:
 - non-empty `rejection_field_ids` required
 - every id must reference a comparison row on this submission
-- each referenced comparison's **effective verdict** must be `fail`
-  (i.e., model verdict == "fail" AND no `field_overrides` row exists that
-  flips it to "pass")
+
+Reviewers can cite any field as a rejection reason — including fields the model
+marked as `pass`. This lets a reviewer flag a problem the model missed.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.schemas import DecisionIn, DecisionOut
-from app.db.models import Comparison, FieldOverride, Review, Submission
+from app.db.models import Comparison, Review, Submission
 from app.db.session import get_db
 
 router = APIRouter(prefix="/api", tags=["decisions"])
@@ -57,8 +57,9 @@ def create_decision(
 
     if payload.decision == "rejected":
         ids = payload.rejection_field_ids or []
-        # All ids must belong to comparisons on this submission and have
-        # effective verdict = fail.
+        # Every id must reference a comparison row on this submission. The
+        # reviewer may cite any field — including ones the model passed —
+        # so we don't filter on verdict here.
         comparisons = (
             db.execute(
                 select(Comparison).where(
@@ -69,33 +70,13 @@ def create_decision(
             .scalars()
             .all()
         )
-        comparisons_by_id = {c.id: c for c in comparisons}
-        missing = [str(i) for i in ids if i not in comparisons_by_id]
+        found_ids = {c.id for c in comparisons}
+        missing = [str(i) for i in ids if i not in found_ids]
         if missing:
             raise HTTPException(
                 status_code=400,
                 detail=f"unknown rejection_field_ids: {missing}",
             )
-        # Effective verdict check
-        overrides = (
-            db.execute(
-                select(FieldOverride).where(FieldOverride.submission_id == sub.id)
-            )
-            .scalars()
-            .all()
-        )
-        override_by_field = {o.field: o for o in overrides}
-        for c in comparisons:
-            ov = override_by_field.get(c.field)
-            effective = ov.override_verdict if ov else c.verdict
-            if effective != "fail":
-                raise HTTPException(
-                    status_code=400,
-                    detail=(
-                        f"comparison {c.id} (field={c.field}) has effective "
-                        f"verdict '{effective}', cannot be used as rejection reason"
-                    ),
-                )
 
     review = Review(
         submission_id=sub.id,

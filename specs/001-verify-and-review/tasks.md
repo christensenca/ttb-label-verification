@@ -189,15 +189,15 @@ selected reasons persist.
 
 ### Tests for User Story 5
 
-- [ ] T060 [P] [US5] Contract test in `tests/api/test_decisions_reject_validation.py`: reject with empty `rejection_field_ids` → 400; reject with an id that doesn't belong to this submission → 400; reject with an id whose effective verdict is `pass` (model passed, OR override-to-pass present) → 400.
-- [ ] T061 [P] [US5] Integration test in `tests/integration/test_reject_flow.py`: process item → 2 fields fail → reject with 2 reasons + comment → fetch detail → assert `review.decision == 'rejected'`, `review.comment == ...`, `review.rejection_field_ids` contains both ids.
+- [X] T060 [P] [US5] Contract test in `tests/api/test_decisions_reject_validation.py`: reject with empty `rejection_field_ids` → 400; reject with an id that doesn't belong to this submission → 400; reject with an id whose effective verdict is `pass` (model passed, OR override-to-pass present) → 400.
+- [X] T061 [P] [US5] Integration test in `tests/integration/test_reject_flow.py`: process item → 2 fields fail → reject with 2 reasons + comment → fetch detail → assert `review.decision == 'rejected'`, `review.comment == ...`, `review.rejection_field_ids` contains both ids.
 
 ### Implementation for User Story 5
 
-- [ ] T062 [US5] Backend: extend `create_decision` (T038) to enforce that every id in `rejection_field_ids` belongs to this submission and has **effective verdict = fail** (considering existing `field_overrides`). Reject otherwise.
-- [ ] T063 [US5] Frontend: enrich `DecisionPanel.tsx` — Reject button opens a panel listing every field whose `effective_verdict === 'fail'` as a checkbox keyed by comparison id; the submit button is disabled until ≥1 checkbox is ticked; comment textarea remains.
-- [ ] T064 [US5] Frontend: implement `frontend/src/components/ApproveConfirmationModal.tsx` — when the user clicks Approve and one or more rows have `effective_verdict === 'fail'`, show the modal with "There are still N failing fields — approve anyway?" plus the field list; on confirm, POST the decision.
-- [ ] T065 [US5] Frontend: render the persisted `review` block on `ReviewPage.tsx` when status is `approved`/`rejected` — show decision, comment, and (for rejections) the selected reason field labels. Decision controls become read-only.
+- [X] T062 [US5] Backend: extend `create_decision` (T038) to enforce that every id in `rejection_field_ids` belongs to this submission and has **effective verdict = fail** (considering existing `field_overrides`). Reject otherwise.
+- [X] T063 [US5] Frontend: enrich `DecisionPanel.tsx` — Reject button opens a panel listing every field whose `effective_verdict === 'fail'` as a checkbox keyed by comparison id; the submit button is disabled until ≥1 checkbox is ticked; comment textarea remains.
+- [X] T064 [US5] Frontend: implement `frontend/src/components/ApproveConfirmationModal.tsx` — when the user clicks Approve and one or more rows have `effective_verdict === 'fail'`, show the modal with "There are still N failing fields — approve anyway?" plus the field list; on confirm, POST the decision.
+- [X] T065 [US5] Frontend: render the persisted `review` block on `ReviewPage.tsx` when status is `approved`/`rejected` — show decision, comment, and (for rejections) the selected reason field labels. Decision controls become read-only.
 
 **Checkpoint**: Spec AS 5.1–5.4 pass; reload survives.
 

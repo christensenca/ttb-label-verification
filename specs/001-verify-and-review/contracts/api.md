@@ -202,7 +202,8 @@ Request body:
 - `comment` may be empty/omitted.
 - `rejection_field_ids` is required and must be non-empty when
   `decision == "rejected"`. Each id must correspond to a `comparisons` row on this
-  submission whose **effective verdict** is `fail`.
+  submission. The reviewer may cite any field — including ones the model
+  marked `pass` — because the reviewer's judgment is authoritative.
 - `rejection_field_ids` must be omitted or `[]` when `decision == "approved"`.
 
 Response 200:
