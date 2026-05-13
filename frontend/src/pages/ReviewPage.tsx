@@ -7,6 +7,7 @@ import type { components } from '../api/generated'
 import DecisionPanel from '../components/DecisionPanel'
 import ExtractionFailedBanner from '../components/ExtractionFailedBanner'
 import FieldGroup from '../components/FieldGroup'
+import { STATUS_LABEL } from '../components/QueueTable'
 
 type Detail = components['schemas']['SubmissionDetailOut']
 
@@ -63,46 +64,61 @@ export default function ReviewPage() {
       {detail.extraction?.error && (
         <ExtractionFailedBanner error={detail.extraction.error} />
       )}
-      <div
-        className="review-layout"
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 24 }}
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          marginBottom: 12,
+        }}
       >
-        <aside className="image-pane">
-          <img
-            src={detail.image_url}
-            alt={detail.expected_values.brand}
-            style={{
-              maxWidth: '100%',
-              border: '1px solid #ccc',
-              borderRadius: 4,
+        <h2 style={{ margin: 0 }}>{detail.expected_values.brand}</h2>
+        <span style={{ color: '#666', fontSize: 13 }}>
+          Status: <strong>{STATUS_LABEL[detail.status]}</strong>
+        </span>
+      </header>
+      <figure
+        style={{
+          margin: '0 0 20px',
+          display: 'flex',
+          justifyContent: 'center',
+          background: '#fafafa',
+          border: '1px solid #ddd',
+          borderRadius: 4,
+          padding: 12,
+        }}
+      >
+        <img
+          src={detail.image_url}
+          alt={detail.expected_values.brand}
+          style={{
+            maxWidth: '100%',
+            maxHeight: 380,
+            objectFit: 'contain',
+            borderRadius: 2,
+          }}
+        />
+      </figure>
+      <div className="fields-pane">
+        {stillProcessing && (
+          <p>This submission is still processing. Polling for updates…</p>
+        )}
+        {!stillProcessing &&
+          (detail.groups ?? []).map((g) => (
+            <FieldGroup key={g.name} group={g} />
+          ))}
+        {!stillProcessing && (
+          <DecisionPanel
+            submissionId={detail.id}
+            status={detail.status}
+            review={detail.review ?? null}
+            failingComparisonIds={failingComparisonIds}
+            onDecided={() => {
+              queryClient.invalidateQueries({ queryKey: ['submission', id] })
+              queryClient.invalidateQueries({ queryKey: ['queue'] })
             }}
           />
-          <h3 style={{ marginTop: 12 }}>{detail.expected_values.brand}</h3>
-          <p style={{ color: '#666', fontSize: 13 }}>
-            Status: <strong>{detail.status}</strong>
-          </p>
-        </aside>
-        <div className="fields-pane">
-          {stillProcessing && (
-            <p>This submission is still processing. Polling for updates…</p>
-          )}
-          {!stillProcessing &&
-            (detail.groups ?? []).map((g) => (
-              <FieldGroup key={g.name} group={g} />
-            ))}
-          {!stillProcessing && (
-            <DecisionPanel
-              submissionId={detail.id}
-              status={detail.status}
-              review={detail.review ?? null}
-              failingComparisonIds={failingComparisonIds}
-              onDecided={() => {
-                queryClient.invalidateQueries({ queryKey: ['submission', id] })
-                queryClient.invalidateQueries({ queryKey: ['queue'] })
-              }}
-            />
-          )}
-        </div>
+        )}
       </div>
     </section>
   )

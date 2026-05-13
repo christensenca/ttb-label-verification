@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
 
 import type { components } from '../api/generated'
+import styles from './QueueTable.module.css'
 
 type SubmissionListItem = components['schemas']['SubmissionListItem']
 type Status = SubmissionListItem['status']
 
-const STATUS_LABEL: Record<Status, string> = {
+export const STATUS_LABEL: Record<Status, string> = {
   loaded: 'Loaded',
   processing: 'Processing',
   ready_for_review: 'Ready for Review',
@@ -26,16 +27,8 @@ const STATUS_COLOR: Record<Status, string> = {
 function StatusPill({ status }: { status: Status }) {
   return (
     <span
-      className="status-pill"
-      style={{
-        background: STATUS_COLOR[status],
-        padding: '2px 10px',
-        borderRadius: 12,
-        fontSize: 12,
-        fontWeight: 500,
-        color: '#222',
-        whiteSpace: 'nowrap',
-      }}
+      className={styles.statusPill}
+      style={{ background: STATUS_COLOR[status] }}
     >
       {STATUS_LABEL[status]}
     </span>
@@ -47,26 +40,31 @@ export default function QueueTable({ items }: { items: SubmissionListItem[] }) {
     return <p>No submissions yet.</p>
   }
   return (
-    <table className="queue-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <table className={styles.table}>
+      <colgroup>
+        <col className={styles.colThumb} />
+        <col className={styles.colBrand} />
+        <col className={styles.colSource} />
+        <col className={styles.colStatus} />
+        <col className={styles.colAction} />
+      </colgroup>
       <thead>
-        <tr>
-          <th style={{ textAlign: 'left' }}>Thumb</th>
-          <th style={{ textAlign: 'left' }}>Brand</th>
-          <th style={{ textAlign: 'left' }}>Source</th>
-          <th style={{ textAlign: 'left' }}>Status</th>
-          <th />
+        <tr className={styles.headerRow}>
+          <th>Thumb</th>
+          <th>Brand</th>
+          <th>Source</th>
+          <th>Status</th>
+          <th aria-label="Action" />
         </tr>
       </thead>
       <tbody>
         {items.map((item) => (
-          <tr key={item.id}>
+          <tr key={item.id} className={styles.row}>
             <td>
               <img
                 src={item.thumbnail_url}
                 alt={item.brand}
-                width={48}
-                height={48}
-                style={{ objectFit: 'cover', borderRadius: 4 }}
+                className={styles.thumb}
                 onError={(e) => {
                   e.currentTarget.style.visibility = 'hidden'
                 }}
@@ -77,7 +75,7 @@ export default function QueueTable({ items }: { items: SubmissionListItem[] }) {
             <td>
               <StatusPill status={item.status} />
             </td>
-            <td>
+            <td className={styles.action}>
               <Link to={`/items/${item.id}`}>Open →</Link>
             </td>
           </tr>

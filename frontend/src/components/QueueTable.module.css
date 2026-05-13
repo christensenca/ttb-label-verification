@@ -1,0 +1,70 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: left;
+  border: 1px solid #e5e4e7;
+}
+
+.headerRow {
+  background: #f4f3ec;
+  color: #4a4855;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #d8d6d0;
+}
+
+.headerRow th {
+  text-align: left;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+
+.row {
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.row td {
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.colThumb {
+  width: 72px;
+}
+.colBrand {
+  width: auto;
+}
+.colSource {
+  width: 110px;
+}
+.colStatus {
+  width: 180px;
+}
+.colAction {
+  width: 90px;
+}
+
+.thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+}
+
+.action {
+  text-align: right !important;
+}
+
+.statusPill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #222;
+  white-space: nowrap;
+}

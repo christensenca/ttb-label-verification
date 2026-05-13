@@ -1,0 +1,56 @@
+.group {
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.heading {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #08060d;
+  background: #f4f3ec;
+  border: 1px solid #e5e4e7;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  border: 1px solid #e5e4e7;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.colField {
+  width: 16%;
+}
+.colExtracted {
+  width: 27%;
+}
+.colExpected {
+  width: 27%;
+}
+.colConfidence {
+  width: 12%;
+}
+.colVerdict {
+  width: 18%;
+}
+
+.headerRow {
+  background: #f4f3ec;
+  color: #4a4855;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #d8d6d0;
+}
+
+.headerRow th {
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 12px;
+}

@@ -1,26 +1,55 @@
 .row {
   border-bottom: 1px solid #eee;
   vertical-align: top;
+  text-align: left;
+}
+
+.row td {
+  text-align: left;
 }
 
 .cellLabel {
-  padding: 8px 8px 8px 12px;
+  padding: 10px 12px;
   font-weight: 500;
-  width: 20%;
+  color: #08060d;
 }
 
 .cellValue {
-  padding: 8px;
-  width: 30%;
+  padding: 10px 12px;
+  word-break: break-word;
+}
+
+.cellConfidence {
+  padding: 10px 12px;
+  white-space: nowrap;
 }
 
 .cellVerdict {
-  padding: 8px;
-  width: 20%;
+  padding: 10px 12px;
+}
+
+.warningText .cellValue {
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .empty {
   color: #999;
+}
+
+.notApplicable {
+  color: #888;
+  font-style: italic;
+}
+
+.boolTrue {
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.boolFalse {
+  color: #b71c1c;
+  font-weight: 600;
 }
 
 .verdictPill {
@@ -29,58 +58,66 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 2px 8px;
+  padding: 2px 10px;
   border-radius: 10px;
   border: 1px solid transparent;
 }
 
-.rule {
-  color: #666;
-  font-size: 12px;
-  margin-top: 2px;
-}
-
-/* tri-state row tints */
-.green {
-  background-color: #e8f5e9;
-}
-.green .verdictPill {
+.pillPass {
   color: #1b5e20;
   background-color: #c8e6c9;
 }
 
-.yellow {
-  background-color: #fffde7;
-}
-.yellow .verdictPill {
-  color: #8d6e00;
-  background-color: #fff59d;
-}
-
-.red {
-  background-color: #ffebee;
-}
-.red .verdictPill {
+.pillFail {
   color: #b71c1c;
   background-color: #ffcdd2;
 }
 
-.grey {
-  background-color: #f5f5f5;
-  color: #888;
-}
-.grey .verdictPill {
+.pillNa {
   color: #555;
   background-color: #e0e0e0;
 }
-.grey .cellLabel,
-.grey .cellValue,
-.grey .cellVerdict {
+
+.detail {
+  color: #666;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.confChip {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 1px 8px;
+  border-radius: 8px;
+}
+
+.confHi {
+  color: #2e7d32;
+  background-color: #e8f5e9;
+}
+
+.confMed {
+  color: #8d6e00;
+  background-color: #fff59d;
+}
+
+.confLow {
+  color: #b71c1c;
+  background-color: #ffcdd2;
+}
+
+.confNone {
+  color: #999;
+}
+
+.muted .cellValue,
+.muted .cellLabel {
   color: #888;
 }
 
-/* Override treatment: distinct outline over the underlying color so both
-   the original model verdict and the human override remain visible. */
 .overridden {
   outline: 2px dashed #6a1b9a;
   outline-offset: -2px;
