@@ -28,6 +28,8 @@ Thumbs.db
 .agents/
 .claude/
 skills-lock.json
+.specify/
+ClAUDE.md
 
 # Build artifacts
 dist/

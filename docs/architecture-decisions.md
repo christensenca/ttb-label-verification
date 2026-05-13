@@ -116,21 +116,104 @@ Decisions captured from the planning conversation. Builds on [interview-highligh
 
 ---
 
-## 7. Image storage — local disk for prototype, swap-ready
+## 7. Image storage — Railway volume, content-addressed paths
 
-**Decision:** Uploaded images written to local disk in the container during the request. Stored under a content-addressed path so the result view can render the image alongside the verification result. Wrapped behind a small storage interface so swapping to Azure Blob / S3 is ~20 lines.
+**Decision:** Uploaded images written to a Railway-mounted volume (path read from `IMAGE_STORAGE_DIR`, e.g. `/data/images`), under content-addressed filenames so the result view can render the image alongside the verification result. Wrapped behind a small storage interface so swapping to Azure Blob / S3 is small and isolated if the deploy target ever changes.
 
-**Why:** Prototype scope. Marcus said no PII concerns for the exercise. Local disk + SQLite (if/when we add a DB) is a coherent "ephemeral prototype" story. Container restart wipes the directory — fine for demo, document the privacy story in the README.
+**Why:** Railway volumes give us durability — images persist across container restarts and redeploys — without standing up a separate blob service. Matches the single-container scale of the prototype. Marcus said no PII concerns for the exercise, so we don't need the access-control / signed-URL machinery blob storage would bring.
+
+**Setup:**
+- Volume mounted at the path in `IMAGE_STORAGE_DIR`.
+- Fixture images (decision #9) ship in the container build; the seed step copies them onto the volume on first boot if missing.
+- `POST /admin/reset` clears user-added images and re-copies fixtures.
+
+**Trade-off:** Volume mounts are single-container — fine for the prototype, but if we ever scale horizontally we'd switch to blob. That's why the storage interface stays.
+
+**Ruled out:**
+- *Container-local ephemeral disk* — wipes on restart, would orphan `image_path` rows in Postgres.
+- *Azure Blob / S3 now* — overkill for current scale; adds SDK + auth + signed-URL plumbing not worth it yet.
+
+---
+
+## 8. Human-in-the-loop review — model proposes, human decides
+
+**Decision:** The verification pipeline never auto-accepts. Every submitted label produces a pending-review item; a human reviewer approves or rejects each field individually before the item is considered verified. Submission is decoupled from review.
+
+**Why:** Sarah's job and Jenny's compliance posture both require human accountability on TTB submissions. An AI-only pass/fail is a liability, not a feature. Treating the model as a first-pass annotator with a human approver makes the tool trustworthy and matches the actual workflow — the model observes and reports, the human decides.
+
+**Flow:**
+1. User submits one or more labels (image + expected values) via single or batch endpoints.
+2. Pipeline runs extraction + comparison, produces per-field pass/fail with evidence.
+3. Item lands in a review queue with status `pending_review`.
+4. Reviewer opens the item, sees the label image alongside model output and comparison verdicts.
+5. Reviewer approves/rejects each field (or the whole item), optionally with notes.
+6. Final status is recorded — both model output and human decisions persist for audit.
+
+**Implications:**
+- Batch upload (decision #5) creates N queue items, not N synchronous decisions.
+- Sync `/verify` still returns the model's result inline so the UI can show it immediately, but the item also lands in the queue.
+- This is what forces a database — see decision #9.
+
+---
+
+## 9. Database — Postgres via SQLAlchemy + Alembic
+
+**Decision:** PostgreSQL, accessed via SQLAlchemy 2.x with Alembic migrations. Hosted as a Railway Postgres add-on for the demo; portable to Azure Database for PostgreSQL with no code change.
+
+**Why:** The review queue (decision #8) requires persistence across sessions, which settles the "do we need a DB" question. Postgres over SQLite for stability — same effort with SQLAlchemy in front, and we avoid the SQLite→Postgres swap later. The portability discipline (ORM only, no raw SQL, `DATABASE_URL` everywhere) keeps the door open to Azure with zero code change.
+
+**Schema sketch (subject to change):**
+- `submissions` — one row per uploaded label: id, image_path, expected_values (JSONB), status, submitted_at.
+- `extractions` — model output per submission: extracted fields, raw response, model version, latency, cost.
+- `comparisons` — per-field pass/fail with evidence and rule applied.
+- `reviews` — human decisions: per-field approve/reject, notes, decided_at.
+
+**Single-user prototype framing:**
+- No auth. The deployed instance is a shared demo; UI shows a "shared demo instance — data is visible to anyone with the link" banner.
+- Preloaded fixtures: a handful of submissions in various states (pending, approved, rejected) so a fresh visitor can explore the review UX without uploading anything. Fixture images ship inside the container build.
+- `POST /admin/reset` endpoint — wipes user-added data and re-seeds fixtures. Surfaced in the UI as a reset button.
+
+**Portability discipline:**
+- All DB access through SQLAlchemy ORM — no raw SQL strings.
+- Alembic for schema changes from day one.
+- `DATABASE_URL` env var (Railway provides, Azure provides) — no hardcoded connection logic.
+- Avoid Postgres-only features (arrays, full-text search) unless we explicitly decide we want them.
+
+**Ruled out:**
+- *SQLite* — would work, but the migration to Postgres later is non-zero even with SQLAlchemy in front. Choosing Postgres now removes the swap.
+- *No DB* — incompatible with the review queue.
+
+---
+
+## 10. Extraction output mode — structured outputs with Pydantic schema
+
+**Decision:** Use the OpenAI structured-output API (`client.beta.chat.completions.parse` with `response_format=<PydanticModel>`). The `LabelExtractionResponse` Pydantic model in [pipeline/extract.py](../pipeline/extract.py) defines every field; the server enforces the schema and returns a parsed object.
+
+**Why:** Eliminates a whole class of parse failures. Free-form text + regex is fragile across model versions. The older JSON mode (`response_format={"type": "json_object"}`) gives JSON but no schema enforcement — still requires defensive parsing. Structured outputs are the most drift-resistant option and the schema lives in code, type-checked.
+
+**Trade-off:** Tied to providers that implement OpenAI's structured-output API. OpenRouter routes it transparently for supporting models. If we ever pick a model that doesn't, we fall back to JSON mode + Pydantic validation post-parse.
+
+---
+
+## 11. Vision call topology — one call, post-hoc warning validation
+
+**Decision:** A single vision call per label extracts everything — brand, class/type, ABV, producer info, etc., *and* the Government Warning text plus its bold/style flags. Strict warning validation (decision #6) runs in the comparison layer against the extracted text + flags, not in a separate vision call.
+
+**Why:** Two calls would double latency for a marginal accuracy gain. The warning's strictness can be enforced post-extraction with normalized string matching against the canonical 27 CFR 16.21 text — the model only needs to report what it sees, not judge it. Bold/style detection is a model job; correctness checking is a programmatic job.
+
+**Implications:**
+- The Pydantic schema includes `government_warning_text`, `government_warning_bold`, and `government_warning_body_bold`.
+- The 5-second end-to-end latency budget (decision #2) stays achievable on one call.
+
+**Ruled out:**
+- *Second vision call dedicated to the warning* — kept as a fallback if benchmarks show warning extraction is unreliable, but current benchmarks don't justify it.
 
 ---
 
 ## Deferred decisions
 
-- **Database.** Likely SQLite if we need persistence for batch tracking; Postgres if we want a more production-shaped story. Punted until we know whether batch is in scope.
-- **Agent input form shape.** Field-by-field form vs. JSON paste vs. CSV-style row. Shapes both UX and API contract.
-- **Batch upload UX.** Zip of images + CSV of expected values? Multiple image uploads + one CSV? Per-row API calls? Affects the batch endpoint shape directly.
-- **OpenAI output mode.** Structured outputs (JSON schema enforced) vs. JSON mode vs. free-form + parse. Leaning structured outputs — they're the most robust to drift.
-- **Vision call topology.** One call extracts everything, *or* two calls (one for fields, one specifically for the warning statement). Splitting may be cleaner since the warning needs different evidence (bold detection, exact text), but doubles latency.
+- **Agent input form shape.** Field-by-field form vs. JSON paste. Leaning JSON-based given the "JSON + images" framing of submissions, but the UI affordance is undecided.
+- **Batch upload UX.** Multiple image uploads + a single JSON document of expected values, vs. one zip bundle, vs. per-row API calls. Affects the batch endpoint shape directly.
 
 ---
 
@@ -140,9 +223,12 @@ Decisions captured from the planning conversation. Builds on [interview-highligh
 |---|---|
 | Frontend | React + Vite |
 | Backend | FastAPI (Python) |
-| Vision | OpenAI vision via OpenRouter → direct OpenAI for demo |
+| Vision | Vision LLM via OpenRouter (model configurable; current default Gemini) |
+| Extraction output | OpenAI structured outputs, Pydantic schema enforced |
+| Vision call topology | Single call per label, post-hoc warning validation |
 | Comparison | Programmatic, per-field strictness |
-| Storage (images) | Local disk (swap-ready) |
-| Database | Deferred (likely SQLite) |
+| Review | Human-in-the-loop, per-field approve/reject; model never auto-accepts |
+| Storage (images) | Railway volume (`IMAGE_STORAGE_DIR`); fixtures baked into container, copied to volume on first boot |
+| Database | Postgres (Railway Postgres add-on, SQLAlchemy + Alembic) |
 | Container | Multi-stage Dockerfile |
 | Host | Railway (Azure Container Apps portable) |
