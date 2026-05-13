@@ -54,8 +54,8 @@ class FieldExtraction(BaseModel):
 class LabelExtractionResponse(BaseModel):
     """Direct model response for label extraction.
 
-    Text-like values are wrapped with readability confidence. Simple booleans
-    stay simple so the adapter does not invent confidence for non-text fields.
+    Text-like values include readability confidence. Simple booleans stay
+    simple so the adapter does not invent confidence for non-text fields.
     """
 
     brand: FieldExtraction = Field(description="Brand name as it appears on the label.")
@@ -174,7 +174,7 @@ return null for that field's value.
 
 Field rules:
 
-- For wrapped text fields, return the raw visible text exactly as printed. \
+- For text fields with confidence, return the raw visible text exactly as printed. \
 Preserve tokens, punctuation, case, and line-order as well as the image allows. \
 Do not normalize, title-case, expand abbreviations, parse units, or compare \
 values to expected regulatory text.
@@ -218,7 +218,7 @@ bold. False if regular. Null if unclear. All-caps is not bold.
 """
 
 
-WRAPPED_FIELDS = (
+TEXT_FIELDS_WITH_CONFIDENCE = (
     "brand",
     "class_type",
     "alcohol_content",
@@ -233,9 +233,12 @@ WRAPPED_FIELDS = (
 def unwrap_label_extraction_response(
     response: LabelExtractionResponse,
 ) -> tuple[ExtractedLabel, dict[str, ExtractionConfidence]]:
-    """Adapt wrapped response fields into the existing flat label shape."""
-    flat = {name: getattr(response, name).value for name in WRAPPED_FIELDS}
-    confidence = {name: getattr(response, name).extraction_confidence for name in WRAPPED_FIELDS}
+    """Adapt confidence-bearing response fields into the existing flat label shape."""
+    flat = {name: getattr(response, name).value for name in TEXT_FIELDS_WITH_CONFIDENCE}
+    confidence = {
+        name: getattr(response, name).extraction_confidence
+        for name in TEXT_FIELDS_WITH_CONFIDENCE
+    }
     label = ExtractedLabel(
         **flat,
         is_imported=response.is_imported,
