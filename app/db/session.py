@@ -12,8 +12,15 @@ from app.config import get_settings
 
 
 def _make_engine() -> Engine:
+    url = get_settings().database_url
+    # Railway/Heroku-style postgres URLs use the bare `postgresql://` scheme;
+    # this project only ships psycopg3, so SQLAlchemy needs the `+psycopg` driver.
+    if url.startswith("postgres://"):
+        url = "postgresql+psycopg://" + url[len("postgres://") :]
+    elif url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url[len("postgresql://") :]
     return create_engine(
-        get_settings().database_url,
+        url,
         pool_pre_ping=True,
         future=True,
     )

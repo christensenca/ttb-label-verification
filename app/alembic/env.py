@@ -26,7 +26,12 @@ if config.config_file_name is not None:
 # `driver://user:pass@localhost/dbname` as a placeholder — treat that as unset.
 _url_in_ini = config.get_main_option("sqlalchemy.url") or ""
 if not _url_in_ini or _url_in_ini.startswith("driver://"):
-    config.set_main_option("sqlalchemy.url", get_settings().database_url)
+    _settings_url = get_settings().database_url
+    if _settings_url.startswith("postgres://"):
+        _settings_url = "postgresql+psycopg://" + _settings_url[len("postgres://") :]
+    elif _settings_url.startswith("postgresql://"):
+        _settings_url = "postgresql+psycopg://" + _settings_url[len("postgresql://") :]
+    config.set_main_option("sqlalchemy.url", _settings_url)
 
 target_metadata = Base.metadata
 
