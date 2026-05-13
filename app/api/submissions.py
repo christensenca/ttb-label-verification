@@ -1,12 +1,16 @@
-"""Submissions API: list, start, detail, image (T034–T037, US1)."""
+"""Submissions API: list, start, create, detail, image (T034–T037, T057)."""
 
 from __future__ import annotations
 
+import io
+import json
 import mimetypes
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
+from PIL import Image, UnidentifiedImageError
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -20,6 +24,7 @@ from app.api.schemas import (
     OverrideOut,
     ReviewOut,
     StartOut,
+    SubmissionCreateOut,
     SubmissionDetailOut,
     SubmissionListItem,
 )
@@ -30,6 +35,71 @@ from app.services import processor
 from app.services.storage import FilesystemImageStore
 
 router = APIRouter(prefix="/api", tags=["submissions"])
+
+MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB per contracts/api.md
+MAX_IMAGE_PIXELS = 40_000_000  # 40 MP — far above any realistic label photo
+_UPLOAD_CHUNK = 64 * 1024
+
+
+async def _read_capped(upload: UploadFile, max_bytes: int) -> bytes:
+    """Read an UploadFile in chunks, aborting as soon as `max_bytes` is exceeded.
+
+    Prevents an attacker from forcing the server to buffer multi-GB requests
+    just to learn we'd reject them after the fact.
+    """
+    buf = bytearray()
+    while True:
+        chunk = await upload.read(_UPLOAD_CHUNK)
+        if not chunk:
+            break
+        buf.extend(chunk)
+        if len(buf) > max_bytes:
+            raise HTTPException(
+                status_code=400,
+                detail=f"image exceeds {max_bytes // (1024 * 1024)} MB limit",
+            )
+    return bytes(buf)
+
+
+def _matches_magic(content: bytes, content_type: str) -> bool:
+    """Verify the byte signature matches the client-declared content type.
+
+    Defense against an attacker uploading arbitrary bytes (e.g., an
+    executable) under a permitted image content-type.
+    """
+    if content_type in {"image/jpeg", "image/jpg"}:
+        return content.startswith(b"\xff\xd8\xff")
+    if content_type == "image/png":
+        return content.startswith(b"\x89PNG\r\n\x1a\n")
+    if content_type == "image/webp":
+        return content.startswith(b"RIFF") and content[8:12] == b"WEBP"
+    return False
+
+
+def _validate_image_bytes(content: bytes) -> None:
+    """Decode the image headers via Pillow and enforce a pixel-count cap.
+
+    `Image.verify()` parses headers and catches corrupt/truncated payloads
+    without decoding the pixel data. The pixel-count cap blocks
+    decompression-bomb images that claim huge dimensions in a small file.
+    """
+    try:
+        with Image.open(io.BytesIO(content)) as img:
+            img.verify()
+        with Image.open(io.BytesIO(content)) as img:
+            width, height = img.size
+    except (UnidentifiedImageError, OSError, ValueError) as exc:
+        raise HTTPException(
+            status_code=400, detail=f"invalid image: {exc}"
+        ) from exc
+    if width * height > MAX_IMAGE_PIXELS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"image dimensions {width}x{height} exceed pixel limit "
+                f"({MAX_IMAGE_PIXELS:,} px)"
+            ),
+        )
 
 
 # --- List ------------------------------------------------------------------
@@ -69,6 +139,77 @@ def list_submissions(db: Session = Depends(get_db)) -> list[SubmissionListItem]:
             )
         )
     return items
+
+
+# --- Create ----------------------------------------------------------------
+
+
+_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
+
+
+@router.post(
+    "/submissions",
+    response_model=SubmissionCreateOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_submission(
+    image: UploadFile | None = File(default=None),
+    expected_values: str | None = Form(default=None),
+    db: Session = Depends(get_db),
+) -> SubmissionCreateOut:
+    if image is None or not image.filename:
+        raise HTTPException(status_code=400, detail="image file is required")
+    if expected_values is None:
+        raise HTTPException(status_code=400, detail="expected_values is required")
+
+    content_type = (image.content_type or "").lower()
+    if content_type not in _ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=415,
+            detail=f"unsupported image content type: {content_type or 'unknown'}",
+        )
+
+    content = await _read_capped(image, MAX_IMAGE_BYTES)
+    if not content:
+        raise HTTPException(status_code=400, detail="image file is empty")
+
+    if not _matches_magic(content, content_type):
+        raise HTTPException(
+            status_code=400,
+            detail=f"file bytes do not match declared content type {content_type}",
+        )
+
+    _validate_image_bytes(content)
+
+    try:
+        parsed = json.loads(expected_values)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=400, detail=f"expected_values is not valid JSON: {exc.msg}"
+        ) from exc
+
+    try:
+        validated = ExpectedValues.model_validate(parsed)
+    except ValidationError as exc:
+        first = exc.errors()[0]
+        loc = ".".join(str(p) for p in first.get("loc", ()))
+        msg = first.get("msg", "validation error")
+        detail = f"{loc}: {msg}" if loc else msg
+        raise HTTPException(status_code=400, detail=detail) from exc
+
+    store = FilesystemImageStore(get_settings().image_storage_dir)
+    image_key = store.put(content, content_type)
+
+    sub = Submission(
+        image_key=image_key,
+        expected_values=validated.model_dump(),
+        status="loaded",
+        is_fixture=False,
+    )
+    db.add(sub)
+    db.flush()
+    db.refresh(sub)
+    return SubmissionCreateOut(id=sub.id, status=sub.status)  # type: ignore[arg-type]
 
 
 # --- Start -----------------------------------------------------------------

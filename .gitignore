@@ -37,3 +37,6 @@ build/
 
 # Local runtime state (image storage volume, etc.)
 .local/
+
+# Playwright MCP dogfood artifacts (screenshots, traces, console logs)
+.playwright-mcp/

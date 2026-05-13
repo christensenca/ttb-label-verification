@@ -14,7 +14,8 @@ export interface paths {
         /** List Submissions */
         get: operations["list_submissions_api_submissions_get"];
         put?: never;
-        post?: never;
+        /** Create Submission */
+        post: operations["create_submission_api_submissions_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -119,6 +120,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_create_submission_api_submissions_post */
+        Body_create_submission_api_submissions_post: {
+            /** Image */
+            image?: string | null;
+            /** Expected Values */
+            expected_values?: string | null;
+        };
         /** DecisionIn */
         DecisionIn: {
             /**
@@ -298,6 +306,19 @@ export interface components {
             /** Submission Ids */
             submission_ids: string[];
         };
+        /** SubmissionCreateOut */
+        SubmissionCreateOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "loaded" | "processing" | "ready_for_review" | "approved" | "rejected" | "extraction_failed";
+        };
         /** SubmissionDetailOut */
         SubmissionDetailOut: {
             /**
@@ -392,6 +413,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubmissionListItem"][];
+                };
+            };
+        };
+    };
+    create_submission_api_submissions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_submission_api_submissions_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionCreateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

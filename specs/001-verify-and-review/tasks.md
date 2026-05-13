@@ -164,13 +164,13 @@ alongside the fixtures.
 
 ### Tests for User Story 2
 
-- [ ] T056 [P] [US2] Contract test in `tests/api/test_submissions_create.py`: valid multipart returns 201 with `{id, status: "loaded"}`; missing image → 400; non-JSON expected_values → 400; `is_imported=true` with empty `country_of_origin` → 400 with specific reason; oversize image (>10 MB) → 400; wrong content-type → 415.
+- [X] T056 [P] [US2] Contract test in `tests/api/test_submissions_create.py`: valid multipart returns 201 with `{id, status: "loaded"}`; missing image → 400; non-JSON expected_values → 400; `is_imported=true` with empty `country_of_origin` → 400 with specific reason; oversize image (>10 MB) → 400; wrong content-type → 415.
 
 ### Implementation for User Story 2
 
-- [ ] T057 [US2] Backend: implement `app/api/submissions.py::create_submission`: accepts `multipart/form-data` (`image` file + `expected_values` string), validates `ExpectedValues` schema (T013), stores image via `ImageStore.put`, inserts submission row with `is_fixture=False`, returns 201.
-- [ ] T058 [P] [US2] Frontend: `frontend/src/components/AddSubmissionForm.tsx` — file input (image), textarea (JSON), submit. On submit calls `POST /api/submissions` and surfaces validation errors from the response body.
-- [ ] T059 [US2] Frontend: integrate `AddSubmissionForm` into `QueuePage.tsx`; on success, invalidate the queue query so the new row appears.
+- [X] T057 [US2] Backend: implement `app/api/submissions.py::create_submission`: accepts `multipart/form-data` (`image` file + `expected_values` string), validates `ExpectedValues` schema (T013), stores image via `ImageStore.put`, inserts submission row with `is_fixture=False`, returns 201.
+- [X] T058 [P] [US2] Frontend: `frontend/src/components/AddSubmissionForm.tsx` — file input (image), textarea (JSON), submit. On submit calls `POST /api/submissions` and surfaces validation errors from the response body.
+- [X] T059 [US2] Frontend: integrate `AddSubmissionForm` into `QueuePage.tsx`; on success, invalidate the queue query so the new row appears.
 
 **Checkpoint**: Spec AS 2.1–2.3 pass.
 

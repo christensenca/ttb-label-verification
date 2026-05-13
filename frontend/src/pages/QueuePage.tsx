@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '../api/client'
 import type { components } from '../api/generated'
+import AddSubmissionForm from '../components/AddSubmissionForm'
 import QueueTable from '../components/QueueTable'
 
 type SubmissionListItem = components['schemas']['SubmissionListItem']
@@ -11,6 +13,7 @@ const QUEUE_KEY = ['queue'] as const
 
 export default function QueuePage() {
   const queryClient = useQueryClient()
+  const [isAddOpen, setIsAddOpen] = useState(false)
 
   const queueQuery = useQuery<SubmissionListItem[]>({
     queryKey: QUEUE_KEY,
@@ -37,6 +40,14 @@ export default function QueuePage() {
         <div className="queue-actions">
           <button
             type="button"
+            className="add-button"
+            onClick={() => setIsAddOpen((v) => !v)}
+            aria-expanded={isAddOpen}
+          >
+            {isAddOpen ? 'Cancel' : 'Add my own…'}
+          </button>
+          <button
+            type="button"
             className="start-button"
             disabled={loadedCount === 0 || startMutation.isPending}
             onClick={() => startMutation.mutate()}
@@ -52,6 +63,14 @@ export default function QueuePage() {
           )}
         </div>
       </div>
+      {isAddOpen && (
+        <AddSubmissionForm
+          onCreated={() => {
+            setIsAddOpen(false)
+            queryClient.invalidateQueries({ queryKey: QUEUE_KEY })
+          }}
+        />
+      )}
       {queueQuery.isLoading && <p>Loading queue…</p>}
       {queueQuery.isError && (
         <p className="error">Failed to load queue: {String(queueQuery.error)}</p>
