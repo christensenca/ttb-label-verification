@@ -293,11 +293,24 @@ function downloadTemplate() {
   URL.revokeObjectURL(url)
 }
 
+const MAX_BULK_IMAGES = 100
+const MAX_BULK_BYTES = 200 * 1024 * 1024 // 200 MB — matches server cap
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 function BatchPanel({ onAdded, onDismiss }: PanelProps) {
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [csvFiles, setCsvFiles] = useState<File[]>([])
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<BulkCreateOut | null>(null)
+
+  const totalBytes = imageFiles.reduce((sum, f) => sum + f.size, 0)
+  const overSize = totalBytes > MAX_BULK_BYTES
+  const atFileCap = imageFiles.length >= MAX_BULK_IMAGES
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -305,6 +318,13 @@ function BatchPanel({ onAdded, onDismiss }: PanelProps) {
       if (!csvFile) throw new ApiError(400, null, 'Please choose a CSV file.')
       if (imageFiles.length === 0) {
         throw new ApiError(400, null, 'Please choose at least one image.')
+      }
+      if (overSize) {
+        throw new ApiError(
+          400,
+          null,
+          `Batch is ${formatBytes(totalBytes)}, over the ${formatBytes(MAX_BULK_BYTES)} limit.`,
+        )
       }
       const fd = new FormData()
       fd.append('csv', csvFile)
@@ -342,13 +362,24 @@ function BatchPanel({ onAdded, onDismiss }: PanelProps) {
           <div className={styles.columnLabel}>Label images</div>
           <Dropzone
             headline="Drop image files here"
-            subtext="or click to browse — one image per CSV row, JPG/PNG/WebP"
+            subtext={`or click to browse — one image per CSV row, JPG/PNG/WebP, up to ${MAX_BULK_IMAGES} images per batch`}
             accept="image/jpeg,image/png,image/webp"
             multiple
             files={imageFiles}
             onChange={setImageFiles}
+            maxFiles={MAX_BULK_IMAGES}
             required
           />
+          {imageFiles.length > 0 && (
+            <div className={overSize ? styles.error : styles.help}>
+              {imageFiles.length} {imageFiles.length === 1 ? 'image' : 'images'}
+              {' · '}
+              {formatBytes(totalBytes)}
+              {atFileCap && ` · at ${MAX_BULK_IMAGES}-file cap`}
+              {overSize &&
+                ` · exceeds ${formatBytes(MAX_BULK_BYTES)} batch limit`}
+            </div>
+          )}
         </div>
         <div className={styles.column}>
           <div className={styles.columnLabel}>CSV manifest</div>
@@ -395,7 +426,7 @@ function BatchPanel({ onAdded, onDismiss }: PanelProps) {
           <button
             type="submit"
             className={styles.submitButton}
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || overSize}
           >
             {mutation.isPending ? 'Uploading…' : 'Upload batch'}
           </button>

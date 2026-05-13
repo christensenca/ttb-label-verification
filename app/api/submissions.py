@@ -225,6 +225,8 @@ _CSV_HEADER = [
     "country_of_origin",
 ]
 MAX_CSV_BYTES = 1 * 1024 * 1024  # 1 MB — generous for a manifest
+MAX_BULK_IMAGES = 100  # cap files per bulk POST to bound server memory
+MAX_BULK_TOTAL_BYTES = 200 * 1024 * 1024  # 200 MB cap on the combined upload
 
 
 def _coerce_bool(raw: str, field: str) -> bool:
@@ -275,6 +277,14 @@ async def create_submissions_bulk(
         raise HTTPException(status_code=400, detail="csv file is required")
     if not images:
         raise HTTPException(status_code=400, detail="at least one image is required")
+    if len(images) > MAX_BULK_IMAGES:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"batch exceeds {MAX_BULK_IMAGES}-image limit "
+                f"(got {len(images)})"
+            ),
+        )
 
     csv_bytes = await _read_capped(csv_file, MAX_CSV_BYTES)
     if not csv_bytes:
@@ -301,6 +311,7 @@ async def create_submissions_bulk(
     # image check — that's reported as a row-level error.
     image_blobs: dict[str, tuple[bytes, str, str | None]] = {}
     errors: list[BulkErrorOut] = []
+    total_bytes = 0
     for upload in images:
         name = upload.filename or ""
         if not name:
@@ -316,6 +327,15 @@ async def create_submissions_bulk(
             image_blobs[name] = (b"", ct, f"unsupported image content type: {ct or 'unknown'}")
             continue
         content = await _read_capped(upload, MAX_IMAGE_BYTES)
+        total_bytes += len(content)
+        if total_bytes > MAX_BULK_TOTAL_BYTES:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"batch exceeds {MAX_BULK_TOTAL_BYTES // (1024 * 1024)} MB "
+                    "total upload limit"
+                ),
+            )
         check = _check_image_content(content, ct)
         image_blobs[name] = (content, ct, check)
 

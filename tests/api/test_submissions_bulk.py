@@ -151,6 +151,59 @@ def test_bulk_duplicate_csv_filename_flagged(client):
     assert dup_errors[0]["filename"] == "same.jpg"
 
 
+def test_bulk_rejects_too_many_images(client, monkeypatch):
+    """Defense-in-depth: bulk endpoint caps how many images per request."""
+    from app.api import submissions as submissions_api
+
+    monkeypatch.setattr(submissions_api, "MAX_BULK_IMAGES", 3)
+
+    csv_rows = [_HEADER]
+    image_files = []
+    for i in range(5):
+        name = f"label-{i}.jpg"
+        csv_rows.append(
+            f"{name},Brand {i},Whisky,40.0,750 mL,Producer,City ST,false,"
+        )
+        image_files.extend(_files((name, _jpeg(), "image/jpeg")))
+    csv = "\n".join(csv_rows) + "\n"
+
+    response = client.post(
+        "/api/submissions/bulk",
+        files=[
+            ("csv", ("manifest.csv", io.BytesIO(csv.encode()), "text/csv")),
+            *image_files,
+        ],
+    )
+    assert response.status_code == 400, response.text
+    detail = response.json()["detail"]
+    assert "3-image limit" in detail
+    assert "got 5" in detail
+
+
+def test_bulk_rejects_when_total_bytes_exceed_cap(client, monkeypatch):
+    """A combined payload over the total-bytes cap is rejected."""
+    from app.api import submissions as submissions_api
+
+    # Pick a tiny cap so two normal JPEGs blow past it.
+    monkeypatch.setattr(submissions_api, "MAX_BULK_TOTAL_BYTES", 1)
+
+    csv = (
+        f"{_HEADER}\n"
+        "a.jpg,Brand A,Whisky,40.0,750 mL,Producer,City ST,false,\n"
+        "b.jpg,Brand B,Gin,42.5,1 L,Producer,Town ST,false,\n"
+    )
+    response = client.post(
+        "/api/submissions/bulk",
+        files=[
+            ("csv", ("manifest.csv", io.BytesIO(csv.encode()), "text/csv")),
+            *_files(("a.jpg", _jpeg(), "image/jpeg")),
+            *_files(("b.jpg", _jpeg(), "image/jpeg")),
+        ],
+    )
+    assert response.status_code == 400, response.text
+    assert "total upload limit" in response.json()["detail"]
+
+
 def test_bulk_invalid_imported_country_combo_flagged(client):
     csv = (
         f"{_HEADER}\n"
