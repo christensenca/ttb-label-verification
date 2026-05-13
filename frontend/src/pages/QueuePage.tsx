@@ -65,10 +65,8 @@ export default function QueuePage() {
       </div>
       {isAddOpen && (
         <AddSubmissionForm
-          onCreated={() => {
-            setIsAddOpen(false)
-            queryClient.invalidateQueries({ queryKey: QUEUE_KEY })
-          }}
+          onAdded={() => queryClient.invalidateQueries({ queryKey: QUEUE_KEY })}
+          onDismiss={() => setIsAddOpen(false)}
         />
       )}
       {queueQuery.isLoading && <p>Loading queue…</p>}

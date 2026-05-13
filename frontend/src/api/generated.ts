@@ -22,6 +22,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/submissions/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Submissions Bulk */
+        post: operations["create_submissions_bulk_api_submissions_bulk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/submissions/start": {
         parameters: {
             query?: never;
@@ -126,6 +143,32 @@ export interface components {
             image?: string | null;
             /** Expected Values */
             expected_values?: string | null;
+        };
+        /** Body_create_submissions_bulk_api_submissions_bulk_post */
+        Body_create_submissions_bulk_api_submissions_bulk_post: {
+            /** Csv */
+            csv?: string | null;
+            /** Images */
+            images?: string[] | null;
+        };
+        /** BulkCreateOut */
+        BulkCreateOut: {
+            /** Created */
+            created: components["schemas"]["SubmissionCreateOut"][];
+            /** Errors */
+            errors: components["schemas"]["BulkErrorOut"][];
+        };
+        /** BulkErrorOut */
+        BulkErrorOut: {
+            /**
+             * Row
+             * @description 1-based CSV row number (excluding header). None for batch-level errors.
+             */
+            row?: number | null;
+            /** Filename */
+            filename?: string | null;
+            /** Reason */
+            reason: string;
         };
         /** DecisionIn */
         DecisionIn: {
@@ -437,6 +480,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubmissionCreateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_submissions_bulk_api_submissions_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_submissions_bulk_api_submissions_bulk_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkCreateOut"];
                 };
             };
             /** @description Validation Error */

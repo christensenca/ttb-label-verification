@@ -1,12 +1,71 @@
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+.shell {
   border: 1px solid #e5e4e7;
   border-radius: 6px;
   background: #fcfbf7;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e4e7;
+}
+
+.tab {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
+  padding: 10px 18px;
+  color: #6b6375;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.tab[aria-selected='true'] {
+  color: #08060d;
+  border-bottom-color: #aa3bff;
+}
+
+.tab:hover {
+  color: #08060d;
+}
+
+.panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   text-align: left;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+@media (max-width: 720px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.columnLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4a4855;
 }
 
 .row {
@@ -23,27 +82,57 @@
   color: #4a4855;
 }
 
+.fieldGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.fieldGrid .row.full {
+  grid-column: 1 / -1;
+}
+
+.input,
+.textarea {
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 10px;
+  border: 1px solid #d8d6d0;
+  border-radius: 4px;
+  background: #fff;
+}
+
 .textarea {
   font-family: ui-monospace, Consolas, monospace;
   font-size: 13px;
   line-height: 1.4;
-  padding: 8px 10px;
-  border: 1px solid #d8d6d0;
-  border-radius: 4px;
-  background: #fff;
   resize: vertical;
-  min-height: 140px;
+  min-height: 100px;
 }
 
-.fileInput {
-  font-size: 14px;
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkboxRow input {
+  width: 16px;
+  height: 16px;
 }
 
 .actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 8px;
   margin-top: 4px;
+}
+
+.actionsRight {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .submitButton {
@@ -61,6 +150,23 @@
   cursor: progress;
 }
 
+.linkButton {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #d8d6d0;
+  background: #fff;
+  color: #4a4855;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.linkButton:hover {
+  border-color: #aa3bff;
+  color: #aa3bff;
+}
+
 .error {
   padding: 8px 10px;
   border: 1px solid #ef9a9a;
@@ -68,6 +174,25 @@
   color: #b00020;
   border-radius: 4px;
   font-size: 13px;
+}
+
+.success {
+  padding: 8px 10px;
+  border: 1px solid #a5d6a7;
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.errorList {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
+.errorList li {
+  margin-bottom: 2px;
 }
 
 .help {

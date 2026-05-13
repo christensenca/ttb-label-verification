@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import io
 import json
 import mimetypes
@@ -16,6 +17,8 @@ from sqlalchemy.orm import Session
 
 from app.api.schemas import (
     FIELD_GROUPS,
+    BulkCreateOut,
+    BulkErrorOut,
     ExpectedValues,
     ExtractionOut,
     ExtractionTokens,
@@ -76,30 +79,31 @@ def _matches_magic(content: bytes, content_type: str) -> bool:
     return False
 
 
-def _validate_image_bytes(content: bytes) -> None:
-    """Decode the image headers via Pillow and enforce a pixel-count cap.
+def _check_image_content(content: bytes, content_type: str) -> str | None:
+    """Run every post-read image check; return an error string or None.
 
-    `Image.verify()` parses headers and catches corrupt/truncated payloads
-    without decoding the pixel data. The pixel-count cap blocks
-    decompression-bomb images that claim huge dimensions in a small file.
+    Combines: empty-body, magic-byte/content-type match, Pillow header
+    decode (catches corrupt/truncated images), and a pixel-count cap that
+    blocks decompression-bomb images claiming huge dimensions in a small
+    file.
     """
+    if not content:
+        return "image file is empty"
+    if not _matches_magic(content, content_type):
+        return f"file bytes do not match declared content type {content_type}"
     try:
         with Image.open(io.BytesIO(content)) as img:
             img.verify()
         with Image.open(io.BytesIO(content)) as img:
             width, height = img.size
     except (UnidentifiedImageError, OSError, ValueError) as exc:
-        raise HTTPException(
-            status_code=400, detail=f"invalid image: {exc}"
-        ) from exc
+        return f"invalid image: {exc}"
     if width * height > MAX_IMAGE_PIXELS:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"image dimensions {width}x{height} exceed pixel limit "
-                f"({MAX_IMAGE_PIXELS:,} px)"
-            ),
+        return (
+            f"image dimensions {width}x{height} exceed pixel limit "
+            f"({MAX_IMAGE_PIXELS:,} px)"
         )
+    return None
 
 
 # --- List ------------------------------------------------------------------
@@ -170,16 +174,9 @@ async def create_submission(
         )
 
     content = await _read_capped(image, MAX_IMAGE_BYTES)
-    if not content:
-        raise HTTPException(status_code=400, detail="image file is empty")
-
-    if not _matches_magic(content, content_type):
-        raise HTTPException(
-            status_code=400,
-            detail=f"file bytes do not match declared content type {content_type}",
-        )
-
-    _validate_image_bytes(content)
+    err = _check_image_content(content, content_type)
+    if err is not None:
+        raise HTTPException(status_code=400, detail=err)
 
     try:
         parsed = json.loads(expected_values)
@@ -210,6 +207,191 @@ async def create_submission(
     db.flush()
     db.refresh(sub)
     return SubmissionCreateOut(id=sub.id, status=sub.status)  # type: ignore[arg-type]
+
+
+# --- Bulk create -----------------------------------------------------------
+
+
+_CSV_HEADER = [
+    "filename",
+    "brand",
+    "class_type",
+    "alcohol_content",
+    "net_contents",
+    "producer_name",
+    "producer_address",
+    "is_imported",
+    "country_of_origin",
+]
+MAX_CSV_BYTES = 1 * 1024 * 1024  # 1 MB — generous for a manifest
+
+
+def _coerce_bool(raw: str, field: str) -> bool:
+    v = raw.strip().lower()
+    if v in {"true", "1", "yes"}:
+        return True
+    if v in {"false", "0", "no", ""}:
+        return False
+    raise ValueError(f"{field}: expected true/false, got {raw!r}")
+
+
+def _coerce_float(raw: str, field: str) -> float:
+    try:
+        return float(raw.strip())
+    except ValueError as exc:
+        raise ValueError(f"{field}: expected number, got {raw!r}") from exc
+
+
+def _row_to_expected_values(row: dict[str, str]) -> ExpectedValues:
+    """Map one CSV DictReader row to a validated ExpectedValues."""
+    country_raw = (row.get("country_of_origin") or "").strip()
+    payload = {
+        "brand": (row.get("brand") or "").strip(),
+        "class_type": (row.get("class_type") or "").strip(),
+        "alcohol_content": _coerce_float(
+            row.get("alcohol_content") or "", "alcohol_content"
+        ),
+        "net_contents": (row.get("net_contents") or "").strip(),
+        "producer_name": (row.get("producer_name") or "").strip(),
+        "producer_address": (row.get("producer_address") or "").strip(),
+        "is_imported": _coerce_bool(row.get("is_imported") or "", "is_imported"),
+        "country_of_origin": country_raw or None,
+    }
+    return ExpectedValues.model_validate(payload)
+
+
+@router.post(
+    "/submissions/bulk",
+    response_model=BulkCreateOut,
+    status_code=status.HTTP_200_OK,
+)
+async def create_submissions_bulk(
+    csv_file: UploadFile | None = File(default=None, alias="csv"),
+    images: list[UploadFile] | None = File(default=None),
+    db: Session = Depends(get_db),
+) -> BulkCreateOut:
+    if csv_file is None or not csv_file.filename:
+        raise HTTPException(status_code=400, detail="csv file is required")
+    if not images:
+        raise HTTPException(status_code=400, detail="at least one image is required")
+
+    csv_bytes = await _read_capped(csv_file, MAX_CSV_BYTES)
+    if not csv_bytes:
+        raise HTTPException(status_code=400, detail="csv file is empty")
+
+    try:
+        text = csv_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(
+            status_code=400, detail=f"csv must be UTF-8: {exc}"
+        ) from exc
+
+    reader = csv.DictReader(io.StringIO(text))
+    if reader.fieldnames is None:
+        raise HTTPException(status_code=400, detail="csv has no header row")
+    missing = [c for c in _CSV_HEADER if c not in reader.fieldnames]
+    if missing:
+        raise HTTPException(
+            status_code=400, detail=f"csv missing required columns: {missing}"
+        )
+
+    # Pre-read each image once, run the image-only validation, and key by
+    # filename for matching. Skip the image bytes for any row that fails the
+    # image check — that's reported as a row-level error.
+    image_blobs: dict[str, tuple[bytes, str, str | None]] = {}
+    errors: list[BulkErrorOut] = []
+    for upload in images:
+        name = upload.filename or ""
+        if not name:
+            errors.append(BulkErrorOut(filename=None, reason="upload without a filename"))
+            continue
+        if name in image_blobs:
+            errors.append(
+                BulkErrorOut(filename=name, reason="duplicate image filename in upload")
+            )
+            continue
+        ct = (upload.content_type or "").lower()
+        if ct not in _ALLOWED_IMAGE_TYPES:
+            image_blobs[name] = (b"", ct, f"unsupported image content type: {ct or 'unknown'}")
+            continue
+        content = await _read_capped(upload, MAX_IMAGE_BYTES)
+        check = _check_image_content(content, ct)
+        image_blobs[name] = (content, ct, check)
+
+    csv_filenames_seen: set[str] = set()
+    used_filenames: set[str] = set()
+    created: list[SubmissionCreateOut] = []
+    store = FilesystemImageStore(get_settings().image_storage_dir)
+
+    for idx, row in enumerate(reader, start=1):
+        filename = (row.get("filename") or "").strip()
+        if not filename:
+            errors.append(BulkErrorOut(row=idx, reason="filename column is empty"))
+            continue
+        if filename in csv_filenames_seen:
+            errors.append(
+                BulkErrorOut(
+                    row=idx, filename=filename, reason="duplicate filename in csv"
+                )
+            )
+            continue
+        csv_filenames_seen.add(filename)
+
+        if filename not in image_blobs:
+            errors.append(
+                BulkErrorOut(
+                    row=idx,
+                    filename=filename,
+                    reason="no uploaded image matches this filename",
+                )
+            )
+            continue
+        content, ct, image_err = image_blobs[filename]
+        if image_err is not None:
+            errors.append(
+                BulkErrorOut(row=idx, filename=filename, reason=image_err)
+            )
+            used_filenames.add(filename)
+            continue
+
+        try:
+            validated = _row_to_expected_values(row)
+        except ValidationError as exc:
+            first = exc.errors()[0]
+            loc = ".".join(str(p) for p in first.get("loc", ()))
+            msg = first.get("msg", "validation error")
+            errors.append(
+                BulkErrorOut(
+                    row=idx,
+                    filename=filename,
+                    reason=f"{loc}: {msg}" if loc else msg,
+                )
+            )
+            used_filenames.add(filename)
+            continue
+        except ValueError as exc:
+            errors.append(BulkErrorOut(row=idx, filename=filename, reason=str(exc)))
+            used_filenames.add(filename)
+            continue
+
+        image_key = store.put(content, ct)
+        sub = Submission(
+            image_key=image_key,
+            expected_values=validated.model_dump(),
+            status="loaded",
+            is_fixture=False,
+        )
+        db.add(sub)
+        db.flush()
+        created.append(SubmissionCreateOut(id=sub.id, status=sub.status))  # type: ignore[arg-type]
+        used_filenames.add(filename)
+
+    for fname in image_blobs.keys() - used_filenames:
+        errors.append(
+            BulkErrorOut(filename=fname, reason="image not referenced in csv")
+        )
+
+    return BulkCreateOut(created=created, errors=errors)
 
 
 # --- Start -----------------------------------------------------------------

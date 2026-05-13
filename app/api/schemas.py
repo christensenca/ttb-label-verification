@@ -194,6 +194,20 @@ class SubmissionCreateOut(BaseModel):
     status: SubmissionStatus
 
 
+class BulkErrorOut(BaseModel):
+    row: int | None = Field(
+        default=None,
+        description="1-based CSV row number (excluding header). None for batch-level errors.",
+    )
+    filename: str | None = None
+    reason: str
+
+
+class BulkCreateOut(BaseModel):
+    created: list[SubmissionCreateOut]
+    errors: list[BulkErrorOut]
+
+
 class StartOut(BaseModel):
     scheduled: int
     submission_ids: list[UUID]
