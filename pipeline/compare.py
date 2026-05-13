@@ -21,6 +21,8 @@ from pipeline.normalize import (
     apply_consistency_rules,
     expand_state_abbrev,
     fuzzy_ratio,
+    norm_class_type,
+    norm_producer_name,
     norm_text,
     normalize_country_origin,
     normalize_warning_text,
@@ -78,14 +80,14 @@ def compare(extracted: dict, expected: dict) -> dict:
 
     out: dict[str, dict] = {}
     out["brand"] = _fuzzy_text_field(extracted.get("brand"), expected.get("brand"))
-    out["class_type"] = _fuzzy_text_field(extracted.get("class_type"), expected.get("class_type"))
+    out["class_type"] = _class_type_field(extracted.get("class_type"), expected.get("class_type"))
     out["alcohol_content"] = _abv_field(
         extracted.get("alcohol_content"), expected.get("alcohol_content")
     )
     out["net_contents"] = _net_contents_field(
         extracted.get("net_contents"), expected.get("net_contents")
     )
-    out["producer_name"] = _fuzzy_text_field(
+    out["producer_name"] = _producer_name_field(
         extracted.get("producer_name"), expected.get("producer_name")
     )
     out["producer_address"] = _address_field(
@@ -123,6 +125,34 @@ def _fuzzy_text_field(extracted, expected) -> dict:
     matched = score >= FUZZY_THRESHOLD
     reason = (
         f"fuzzy match ({score:.1f})"
+        if matched
+        else f"below fuzzy threshold ({score:.1f} < {FUZZY_THRESHOLD})"
+    )
+    return _entry(matched, extracted, expected, reason)
+
+
+def _class_type_field(extracted, expected) -> dict:
+    return _normalized_fuzzy_field(extracted, expected, norm_class_type, "after class normalize")
+
+
+def _producer_name_field(extracted, expected) -> dict:
+    return _normalized_fuzzy_field(
+        extracted, expected, norm_producer_name, "after producer-role normalize"
+    )
+
+
+def _normalized_fuzzy_field(extracted, expected, normalizer, match_note: str) -> dict:
+    if extracted is None and expected is None:
+        return _entry(True, extracted, expected, "both null")
+    if extracted is None or expected is None:
+        return _entry(False, extracted, expected, "missing value on one side")
+    a, b = normalizer(extracted), normalizer(expected)
+    if a == b:
+        return _entry(True, extracted, expected, f"exact match {match_note}")
+    score = fuzzy_ratio(a, b)
+    matched = score >= FUZZY_THRESHOLD
+    reason = (
+        f"fuzzy match ({score:.1f}) {match_note}"
         if matched
         else f"below fuzzy threshold ({score:.1f} < {FUZZY_THRESHOLD})"
     )

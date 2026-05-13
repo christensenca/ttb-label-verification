@@ -41,6 +41,7 @@ class TestExpandStateAbbrev:
         [
             ("austin tx", "austin texas"),
             ("new york ny", "new york new york"),
+            ("new york n.y", "new york new york"),
             ("loretto ky", "loretto kentucky"),
             ("austin texas", "austin texas"),  # already expanded — idempotent
             ("nowhere xx", "nowhere xx"),  # unknown token left alone

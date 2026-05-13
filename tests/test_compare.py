@@ -65,6 +65,12 @@ def test_class_type_caps_passes():
     assert compare(ext, exp)["class_type"]["matched"] is True
 
 
+def test_class_type_leading_percentage_modifier_passes():
+    ext = _base() | {"class_type": "100% RYE WHISKEY"}
+    exp = _base() | {"class_type": "Rye Whiskey"}
+    assert compare(ext, exp)["class_type"]["matched"] is True
+
+
 # ---------- net_contents ----------
 
 
@@ -123,6 +129,7 @@ def test_alcohol_content(extracted, expected, matched):
         ("AUSTIN, TX", "Austin, TX", True),
         ("AUSTIN TEXAS", "Austin, TX", True),
         ("Austin, Texas", "Austin, TX", True),
+        ("New York, N.Y.", "New York, NY", True),
         ("Versailles, Kentucky USA", "Versailles, Kentucky", True),
         ("Star Hill Farm, Loretto, KY", "Star Hill Farm, Loretto, KY", True),
         ("Loretto, KY", "Star Hill Farm, Loretto, KY", False),  # true info loss
@@ -138,6 +145,23 @@ def test_producer_address(extracted, expected, matched):
     ext = _base() | {"producer_address": extracted}
     exp = _base() | {"producer_address": expected}
     assert compare(ext, exp)["producer_address"]["matched"] is matched
+
+
+@pytest.mark.parametrize(
+    "extracted, expected",
+    [
+        ("IMPORTED BY DIAGEO", "Diageo"),
+        ("DISTILLED & BOTTLED BY GOLDEN STATE DISTILLERY", "Golden State Distillery"),
+        (
+            "DISTILLED, AGED AND BOTTLED BY THE MAKER'S MARK DISTILLERY, INC.",
+            "The Maker's Mark Distillery Inc.",
+        ),
+    ],
+)
+def test_producer_name_role_prefixes_pass(extracted, expected):
+    ext = _base() | {"producer_name": extracted}
+    exp = _base() | {"producer_name": expected}
+    assert compare(ext, exp)["producer_name"]["matched"] is True
 
 
 # ---------- is_imported / country_of_origin pair ----------

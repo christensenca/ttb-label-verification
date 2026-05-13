@@ -183,8 +183,54 @@ def expand_state_abbrev(s: str) -> str:
             s = s.replace(name, _STATES[name])
 
     tokens = s.split()
-    expanded = [_STATES.get(tok, tok) for tok in tokens]
+    expanded = []
+    for tok in tokens:
+        state_key = tok.replace(".", "")
+        expanded.append(_STATES.get(state_key, _STATES.get(tok, tok)))
     return " ".join(expanded)
+
+
+def norm_class_type(s: str | None) -> str:
+    """Normalize class/type for comparison.
+
+    Preserves meaningful class terms but drops leading content claims such as
+    ``100%`` when the expected value is the regulatory class itself.
+    """
+    out = norm_text(s)
+    out = re.sub(r"\b\d+(?:\.\d+)?\s*%\s*", " ", out)
+    return re.sub(r"\s+", " ", out).strip()
+
+
+_PRODUCER_ROLE_PREFIXES = (
+    "distilled aged and bottled by ",
+    "distilled and bottled by ",
+    "distilled bottled by ",
+    "aged and bottled by ",
+    "imported by ",
+    "bottled by ",
+    "distilled by ",
+    "produced by ",
+    "processed by ",
+    "blended by ",
+    "made by ",
+)
+
+
+def norm_producer_name(s: str | None) -> str:
+    """Normalize producer name for comparison.
+
+    Label text often includes the mandatory role phrase ("Imported by",
+    "Distilled & Bottled by"). The expected application value may store just
+    the responsible party name, so strip only leading role phrases.
+    """
+    out = norm_text(s)
+    for prefix in _PRODUCER_ROLE_PREFIXES:
+        if out.startswith(prefix):
+            out = out[len(prefix) :]
+            break
+    if out.startswith("the "):
+        out = out[4:]
+    return out.strip()
 
 
 def strip_country_suffix(s: str) -> str:
