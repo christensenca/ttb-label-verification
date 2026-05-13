@@ -7,8 +7,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:8000',
-      '/healthz': 'http://localhost:8000',
+      // E2E_API_URL lets Playwright runs point the dev server at the stub
+      // backend on a non-default port (see scripts/serve_with_stub_extractor.py).
+      '/api': process.env.E2E_API_URL ?? 'http://localhost:8000',
+      '/healthz': process.env.E2E_API_URL ?? 'http://localhost:8000',
     },
   },
   test: {
@@ -16,5 +18,6 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    exclude: ['**/node_modules/**', '**/dist/**', 'tests/e2e/**'],
   },
 })

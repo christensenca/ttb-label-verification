@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
-
 from sqlalchemy import select
 
-from app.db.models import Comparison, Submission
+from app.db.models import Submission
 
 
 def _expected(brand: str):

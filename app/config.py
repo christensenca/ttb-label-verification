@@ -9,9 +9,10 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 # Repo root — used to anchor relative paths so they don't depend on the
 # process's cwd (e.g. starting uvicorn from frontend/ would otherwise resolve
@@ -47,7 +48,9 @@ class Settings(BaseSettings):
     image_storage_dir: Path = Field(
         default=Path("./.local/images"), alias="IMAGE_STORAGE_DIR"
     )
-    cors_allowed_origins: list[str] = Field(
+    # NoDecode tells pydantic_settings to skip its default JSON-decode pass
+    # so the raw env string reaches `_split_csv` below (which accepts CSV).
+    cors_allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173"],
         alias="CORS_ALLOWED_ORIGINS",
     )

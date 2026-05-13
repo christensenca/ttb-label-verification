@@ -41,6 +41,9 @@ RUN uv sync --frozen --no-install-project
 # Copy application source.
 COPY pipeline/ ./pipeline/
 COPY app/ ./app/
+COPY alembic.ini ./alembic.ini
+# Fixture seed reads from /app/test_data at startup; ship it in the image.
+COPY test_data/ ./test_data/
 
 # Now install the project itself (so `app` and `pipeline` are importable).
 RUN uv sync --frozen

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC
+
 from sqlalchemy import select
 
 from app.db.models import Submission
@@ -71,7 +73,7 @@ def test_start_schedules_in_created_at_desc_order(
     leave the physical row order — which the UI never shows — driving the
     processing order, and reviewers see "middle 3 first."
     """
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     from app.services import processor as proc_module
 
@@ -82,7 +84,7 @@ def test_start_schedules_in_created_at_desc_order(
 
     # Insert with explicit created_at values so the test is independent of
     # insertion-time clock resolution and Postgres tuple placement.
-    base = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2025, 1, 1, tzinfo=UTC)
     subs = []
     for offset_minutes in [10, 30, 5, 20, 0]:
         sub = _insert(db_session)

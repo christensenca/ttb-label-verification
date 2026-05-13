@@ -572,8 +572,8 @@ def get_image(submission_id: uuid.UUID, db: Session = Depends(get_db)) -> Stream
     store = FilesystemImageStore(get_settings().image_storage_dir)
     try:
         fh = store.open(sub.image_key)
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="image not found")
+    except FileNotFoundError as err:
+        raise HTTPException(status_code=404, detail="image not found") from err
 
     # Best-effort content-type from the key suffix (e.g. "sha256:abc.jpg").
     suffix = sub.image_key.rsplit(".", 1)[-1].lower()

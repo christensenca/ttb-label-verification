@@ -14,7 +14,10 @@ from app.db.models import Submission
 def test_client_serves_healthz(client):
     response = client.get("/healthz")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["alive"] is True
+    assert body["database"] == "ok"
 
 
 def test_openapi_schema_published(client):

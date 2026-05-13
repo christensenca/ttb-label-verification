@@ -28,6 +28,14 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
+# Uvicorn's default logging config only attaches handlers to `uvicorn.*`
+# loggers; ours (`app.*`, `ttb.processor.event`) would otherwise drop to
+# stderr via the last-resort handler at WARNING. Configure a minimal root
+# handler so INFO from our code — including the per-item extraction event
+# line (T083) — actually reaches stdout for cloud-log scraping.
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
 from app.api import admin as admin_api
 from app.api import decisions as decisions_api
 from app.api import overrides as overrides_api
@@ -88,14 +96,18 @@ def create_app() -> FastAPI:
 
     @app.get("/healthz", tags=["health"])
     def healthz() -> Response:
+        # Liveness is implicit (this function ran). DB reachability requires
+        # a real round-trip — Railway/Azure can be "alive" while the database
+        # is unreachable, and that is exactly the case we want to surface.
         try:
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
         except Exception as exc:  # pragma: no cover - exercised by ops, not tests
             return JSONResponse(
-                {"status": "error", "detail": str(exc)}, status_code=500
+                {"status": "error", "alive": True, "database": "error", "detail": str(exc)},
+                status_code=500,
             )
-        return JSONResponse({"status": "ok"})
+        return JSONResponse({"status": "ok", "alive": True, "database": "ok"})
 
     # Static SPA mount. In dev (before `pnpm build`) the dist dir doesn't exist;
     # skip the mount so the API is still usable on its own.

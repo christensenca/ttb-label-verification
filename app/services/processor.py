@@ -13,6 +13,7 @@ row per known field so the override / rejection APIs see uniform data.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import uuid
 from collections.abc import Callable, Iterable
@@ -31,6 +32,25 @@ from app.services.diff import word_diff
 from pipeline.compare import compare as pipeline_compare
 
 logger = logging.getLogger(__name__)
+
+# Dedicated logger for the per-submission completion event. Emits one JSON
+# line per item to stdout for cloud-log scraping (T083). The durable audit
+# record lives on the `extractions` row; this is the observability sidecar.
+_event_logger = logging.getLogger("ttb.processor.event")
+
+
+def _emit_completion_event(payload: dict[str, Any]) -> None:
+    """Log a single JSON line describing the outcome of one submission.
+
+    The 5-second p95 latency target is not a hard cutoff for the prototype,
+    but `latency_ms` is always logged so we can read it from stdout in
+    addition to the persisted `extractions.latency_ms` column.
+    """
+    try:
+        line = json.dumps(payload, default=str, sort_keys=True)
+    except (TypeError, ValueError):  # pragma: no cover - defensive
+        line = json.dumps({"event": "extraction.completed", "error": "serialize_failed"})
+    _event_logger.info(line)
 
 
 # Fields with `extraction_confidence` reported by the model — these are the
@@ -209,6 +229,18 @@ def process_submission(
                 result.input_tokens,
                 result.output_tokens,
             )
+            _emit_completion_event(
+                {
+                    "event": "extraction.completed",
+                    "submission_id": str(sub.id),
+                    "status": "ready_for_review",
+                    "model": result.model,
+                    "latency_ms": int(result.latency_ms),
+                    "input_tokens": int(result.input_tokens),
+                    "output_tokens": int(result.output_tokens),
+                    "error": None,
+                }
+            )
         except Exception as exc:  # noqa: BLE001 — defensive after extract
             logger.exception(
                 "processor: post-extract failure for %s", submission_id
@@ -252,10 +284,11 @@ def _write_failure(
     for field in ALL_FIELDS:
         # `country_of_origin` is the only field that is genuinely
         # not-applicable on this submission when the label is domestic.
-        if field == "country_of_origin" and not is_imported:
-            verdict = "not_applicable"
-        else:
-            verdict = "fail"
+        verdict = (
+            "not_applicable"
+            if field == "country_of_origin" and not is_imported
+            else "fail"
+        )
         expected_text = _stringify(expected.get(field)) if field in expected else None
         session.add(
             Comparison(
@@ -272,6 +305,18 @@ def _write_failure(
         )
     sub.status = "extraction_failed"
     session.commit()
+    _emit_completion_event(
+        {
+            "event": "extraction.completed",
+            "submission_id": str(sub.id),
+            "status": "extraction_failed",
+            "model": get_settings().openrouter_model,
+            "latency_ms": None,
+            "input_tokens": None,
+            "output_tokens": None,
+            "error": str(exc),
+        }
+    )
 
 
 # --- Start all loaded ------------------------------------------------------

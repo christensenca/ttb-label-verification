@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app.db.models import Submission
 
@@ -30,7 +30,7 @@ def _insert(db_session, **kwargs) -> Submission:
 
 
 def test_list_returns_items_with_required_fields(client, db_session):
-    base = datetime.now(timezone.utc)
+    base = datetime.now(UTC)
     for i in range(7):
         _insert(
             db_session,
@@ -79,7 +79,7 @@ def test_list_ordering_is_created_at_desc(client, db_session):
             "producer_address": "Y",
             "is_imported": False,
         },
-        created_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        created_at=datetime.now(UTC) - timedelta(hours=1),
     )
     newer = _insert(
         db_session,
@@ -92,7 +92,7 @@ def test_list_ordering_is_created_at_desc(client, db_session):
             "producer_address": "Y",
             "is_imported": False,
         },
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db_session.flush()
 

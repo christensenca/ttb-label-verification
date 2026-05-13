@@ -9,8 +9,6 @@ Stubs the extractor; verifies the persistence side-effects per data-model:
 
 from __future__ import annotations
 
-import uuid
-
 from sqlalchemy import select
 
 from app.api.schemas import ALL_FIELDS
