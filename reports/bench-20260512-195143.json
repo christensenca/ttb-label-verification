@@ -1,0 +1,219 @@
+{
+  "don_julio": {
+    "google/gemini-3.1-pro-preview": {
+      "label": {
+        "brand": "Don Julio",
+        "class_type": "TEQUILA BLANCO",
+        "alcohol_content": "40% alc./vol.",
+        "net_contents": "750 mL",
+        "producer_name": "DIAGEO",
+        "producer_address": "NEW YORK, NY",
+        "is_imported": true,
+        "country_of_origin": "PRODUCT OF MEXICO",
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+        "government_warning_bold": true,
+        "government_warning_body_bold": false
+      },
+      "field_confidence": {
+        "brand": "hi",
+        "class_type": "hi",
+        "alcohol_content": "hi",
+        "net_contents": "hi",
+        "producer_name": "hi",
+        "producer_address": "hi",
+        "country_of_origin": "hi",
+        "government_warning_text": "hi"
+      },
+      "latency_ms": 7458.699042035732,
+      "in_tok": 1729,
+      "out_tok": 357,
+      "error": null
+    }
+  },
+  "gray_whale": {
+    "google/gemini-3.1-pro-preview": {
+      "label": {
+        "brand": "GRAY WHALE",
+        "class_type": "GIN",
+        "alcohol_content": "43% ALC./VOL.",
+        "net_contents": "750ML",
+        "producer_name": "GOLDEN STATE DISTILLERY",
+        "producer_address": "PARLIER, CALIFORNIA",
+        "is_imported": false,
+        "country_of_origin": null,
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+        "government_warning_bold": false,
+        "government_warning_body_bold": false
+      },
+      "field_confidence": {
+        "brand": "hi",
+        "class_type": "hi",
+        "alcohol_content": "hi",
+        "net_contents": "hi",
+        "producer_name": "hi",
+        "producer_address": "hi",
+        "country_of_origin": "hi",
+        "government_warning_text": "hi"
+      },
+      "latency_ms": 5593.913541000802,
+      "in_tok": 1729,
+      "out_tok": 358,
+      "error": null
+    }
+  },
+  "hendricks": {
+    "google/gemini-3.1-pro-preview": {
+      "label": {
+        "brand": "HENDRICK'S",
+        "class_type": "GIN",
+        "alcohol_content": "44% ALC. BY VOL.",
+        "net_contents": "750 ML",
+        "producer_name": "WILLIAM GRANT AND SONS, INC.",
+        "producer_address": "NEW YORK, N.Y.",
+        "is_imported": true,
+        "country_of_origin": "SCOTLAND",
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+        "government_warning_bold": true,
+        "government_warning_body_bold": false
+      },
+      "field_confidence": {
+        "brand": "hi",
+        "class_type": "hi",
+        "alcohol_content": "hi",
+        "net_contents": "hi",
+        "producer_name": "hi",
+        "producer_address": "hi",
+        "country_of_origin": "hi",
+        "government_warning_text": "hi"
+      },
+      "latency_ms": 6166.5196660324,
+      "in_tok": 1729,
+      "out_tok": 362,
+      "error": null
+    }
+  },
+  "makers_mark": {
+    "google/gemini-3.1-pro-preview": {
+      "label": {
+        "brand": "Maker's Mark",
+        "class_type": "KENTUCKY STRAIGHT BOURBON WHISKY",
+        "alcohol_content": "45% ALC./VOL.",
+        "net_contents": "750 mL",
+        "producer_name": "THE MAKER'S MARK DISTILLERY, INC.",
+        "producer_address": "STAR HILL FARM, LORETTO, KY. USA.",
+        "is_imported": false,
+        "country_of_origin": null,
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+        "government_warning_bold": true,
+        "government_warning_body_bold": false
+      },
+      "field_confidence": {
+        "brand": "hi",
+        "class_type": "hi",
+        "alcohol_content": "hi",
+        "net_contents": "hi",
+        "producer_name": "hi",
+        "producer_address": "hi",
+        "country_of_origin": "hi",
+        "government_warning_text": "hi"
+      },
+      "latency_ms": 5274.895458016545,
+      "in_tok": 1729,
+      "out_tok": 376,
+      "error": null
+    }
+  },
+  "titos": {
+    "google/gemini-3.1-pro-preview": {
+      "label": {
+        "brand": "Tito's",
+        "class_type": "VODKA",
+        "alcohol_content": "40% ALC./VOL.",
+        "net_contents": "375 ml",
+        "producer_name": "FIFTH GENERATION, INC.",
+        "producer_address": "AUSTIN, TX",
+        "is_imported": false,
+        "country_of_origin": null,
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+        "government_warning_bold": true,
+        "government_warning_body_bold": false
+      },
+      "field_confidence": {
+        "brand": "hi",
+        "class_type": "hi",
+        "alcohol_content": "low",
+        "net_contents": "med",
+        "producer_name": "med",
+        "producer_address": "med",
+        "country_of_origin": "hi",
+        "government_warning_text": "med"
+      },
+      "latency_ms": 6865.473916986957,
+      "in_tok": 1729,
+      "out_tok": 354,
+      "error": null
+    }
+  },
+  "whistlepig": {
+    "google/gemini-3.1-pro-preview": {
+      "label": {
+        "brand": "WHISTLEPIG",
+        "class_type": "100% RYE WHISKEY",
+        "alcohol_content": "48.28% ALC/VOL",
+        "net_contents": "750 ML",
+        "producer_name": "BOTTLED BY WHISTLEPIG WHISKEY CO.",
+        "producer_address": "MINEVILLE, NY",
+        "is_imported": false,
+        "country_of_origin": "DISTILLED IN VT & CANADA",
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+        "government_warning_bold": false,
+        "government_warning_body_bold": false
+      },
+      "field_confidence": {
+        "brand": "hi",
+        "class_type": "hi",
+        "alcohol_content": "hi",
+        "net_contents": "hi",
+        "producer_name": "med",
+        "producer_address": "med",
+        "country_of_origin": "med",
+        "government_warning_text": "med"
+      },
+      "latency_ms": 31358.080457954202,
+      "in_tok": 1729,
+      "out_tok": 3131,
+      "error": null
+    }
+  },
+  "woodfords": {
+    "google/gemini-3.1-pro-preview": {
+      "label": {
+        "brand": "WOODFORD RESERVE",
+        "class_type": "KENTUCKY STRAIGHT RYE WHISKEY",
+        "alcohol_content": "45.2% ALC/VOL (90.4 PROOF)",
+        "net_contents": "750 mL",
+        "producer_name": "THE WOODFORD RESERVE DISTILLERY",
+        "producer_address": "VERSAILLES, KENTUCKY USA",
+        "is_imported": false,
+        "country_of_origin": "USA",
+        "government_warning_text": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+        "government_warning_bold": false,
+        "government_warning_body_bold": false
+      },
+      "field_confidence": {
+        "brand": "hi",
+        "class_type": "hi",
+        "alcohol_content": "hi",
+        "net_contents": "hi",
+        "producer_name": "hi",
+        "producer_address": "hi",
+        "country_of_origin": "hi",
+        "government_warning_text": "hi"
+      },
+      "latency_ms": 5106.818208005279,
+      "in_tok": 1729,
+      "out_tok": 378,
+      "error": null
+    }
+  }
+}
