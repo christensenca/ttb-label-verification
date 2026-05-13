@@ -25,17 +25,22 @@ from pipeline.extract import extract
 
 load_dotenv()
 
+# Model selection: span the cost/capability range for each provider, mixing
+# thinking and non-thinking variants so the latency-vs-accuracy plot reveals
+# an efficient frontier rather than clustering at one tier.
 MODELS = [
-    "google/gemini-3.1-pro-preview",  # best label extraction candidate so far
-    # Faster/lower-cost comparison:
-    # "google/gemini-3.1-flash-lite",
-    # Capability-ceiling comparisons:
-    # "openai/gpt-4o",
-    # Previous bench set — restore for comparison:
-    # "openai/gpt-4o-mini",
-    # "google/gemini-2.5-flash",
-    # "openai/gpt-4.1-mini",
-    # "google/gemini-2.5-pro",
+    # --- OpenAI: 4o → 5, non-thinking + thinking ---
+    "openai/gpt-4o-mini",       # 4o gen, mini, non-thinking — cheap baseline
+    "openai/gpt-4o",            # 4o gen, flagship non-thinking, vision-strong
+    "openai/gpt-4.1-mini",      # 4.1 gen, mid non-thinking
+    "openai/o4-mini",           # reasoning/thinking model in the o-series
+    "openai/gpt-5",             # newest gen top-tier
+    # --- Google: Gemini 2.5 flash + neighbors, non-thinking + thinking ---
+    "google/gemini-2.5-flash-lite",   # cheapest 2.5 variant
+    "google/gemini-2.5-flash",        # mid 2.5 (dynamic thinking)
+    "google/gemini-2.5-pro",          # thinking 2.5 top
+    "google/gemini-3.1-flash-lite",   # newer fast tier
+    "google/gemini-3.1-pro-preview",  # current best baseline
 ]
 
 BOTTLES = [
@@ -178,6 +183,85 @@ def _confidence_summary(confidence: dict | None) -> str:
     return f"hi {counts['hi']} / med {counts['med']} / low {counts['low']}"
 
 
+def _provider(model: str) -> str:
+    return model.split("/", 1)[0]
+
+
+def _pareto_frontier(points: list[tuple[float, float, str]]) -> list[tuple[float, float, str]]:
+    """Pareto-best points minimizing x and maximizing y.
+
+    points: list of (latency, accuracy, label). Returns the subset on the
+    frontier, sorted by latency ascending — ready to draw a step line.
+    """
+    if not points:
+        return []
+    sorted_pts = sorted(points, key=lambda p: (p[0], -p[1]))
+    frontier: list[tuple[float, float, str]] = []
+    best_y = float("-inf")
+    for x, y, label in sorted_pts:
+        if y > best_y:
+            frontier.append((x, y, label))
+            best_y = y
+    return frontier
+
+
+def _plot_frontier(
+    points: list[tuple[float, float, str]],
+    *,
+    title: str,
+    ylabel: str,
+    out_path: Path,
+) -> None:
+    """Scatter latency vs accuracy with provider colors and a Pareto line."""
+    import matplotlib.pyplot as plt
+
+    if not points:
+        return
+
+    provider_colors = {"openai": "#10a37f", "google": "#4285f4"}
+    fig, ax = plt.subplots(figsize=(9, 6))
+
+    for x, y, label in points:
+        prov = _provider(label)
+        ax.scatter(
+            x, y,
+            color=provider_colors.get(prov, "#888"),
+            s=80, edgecolors="black", linewidths=0.5, zorder=3,
+            label=prov,
+        )
+        ax.annotate(
+            short(label),
+            (x, y),
+            textcoords="offset points", xytext=(6, 4),
+            fontsize=8, zorder=4,
+        )
+
+    frontier = _pareto_frontier(points)
+    if len(frontier) >= 2:
+        ax.plot(
+            [p[0] for p in frontier],
+            [p[1] for p in frontier],
+            color="#888", linestyle="--", linewidth=1.2, zorder=2,
+            label="Pareto frontier",
+        )
+
+    ax.set_xlabel("avg latency (ms)")
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3)
+
+    # De-dupe legend (one entry per provider).
+    handles, labels = ax.get_legend_handles_labels()
+    seen: dict[str, object] = {}
+    for h, lab in zip(handles, labels, strict=False):
+        seen.setdefault(lab, h)
+    ax.legend(seen.values(), seen.keys(), loc="lower right", fontsize=9)
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=130)
+    plt.close(fig)
+
+
 def write_report(results: dict, path: Path) -> None:
     lines: list[str] = [
         "# Extraction benchmark\n",
@@ -229,6 +313,41 @@ def write_report(results: dict, path: Path) -> None:
             s["lat"].append(res["latency_ms"])
             s["in"].append(res["in_tok"])
             s["out"].append(res["out_tok"])
+
+    # --- plots: latency vs accuracy & latency vs warning-text accuracy ---
+    overall_points: list[tuple[float, float, str]] = []
+    warn_points: list[tuple[float, float, str]] = []
+    for model in MODELS:
+        s = summary[model]
+        if not s["lat"]:
+            continue
+        avg_lat = sum(s["lat"]) / len(s["lat"])
+        if s["total"]:
+            overall_points.append((avg_lat, s["correct"] / s["total"], model))
+        if s["warn_total"]:
+            warn_points.append((avg_lat, s["warn_ok"] / s["warn_total"], model))
+
+    stem = path.stem  # e.g. bench-20260513-103045
+    overall_plot = path.with_name(f"{stem}-latency-vs-accuracy.png")
+    warn_plot = path.with_name(f"{stem}-latency-vs-warning.png")
+    try:
+        _plot_frontier(
+            overall_points,
+            title="Latency vs accuracy (all scored fields)",
+            ylabel="accuracy (fraction of fields matched)",
+            out_path=overall_plot,
+        )
+        _plot_frontier(
+            warn_points,
+            title="Latency vs warning-text accuracy",
+            ylabel="warning text match rate",
+            out_path=warn_plot,
+        )
+        lines.append("## Latency vs accuracy\n")
+        lines.append(f"![latency vs accuracy]({overall_plot.name})\n")
+        lines.append(f"![latency vs warning-text accuracy]({warn_plot.name})\n")
+    except ImportError:
+        lines.append("_(matplotlib not installed — skipping plots)_\n")
 
     lines.append("## Aggregate scores\n")
     lines.append(
