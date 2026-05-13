@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import type { components } from '../api/generated'
 import AddSubmissionForm from '../components/AddSubmissionForm'
 import QueueTable from '../components/QueueTable'
+import ResetDemoButton from '../components/ResetDemoButton'
 import styles from './QueuePage.module.css'
 
 type SubmissionListItem = components['schemas']['SubmissionListItem']
@@ -88,6 +89,12 @@ export default function QueuePage() {
           </div>
         )}
         {queueQuery.isSuccess && <QueueTable items={items} />}
+        <div className={styles.cardFooter}>
+          <span className={styles.footerNote}>
+            Shared demo — anyone can edit. Use Reset to clear user-added items.
+          </span>
+          <ResetDemoButton />
+        </div>
       </section>
     </div>
   )

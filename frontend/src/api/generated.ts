@@ -150,6 +150,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset Demo */
+        post: operations["reset_demo_api_admin_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -171,6 +188,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdminResetIn */
+        AdminResetIn: {
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** AdminResetOut */
+        AdminResetOut: {
+            /** Deleted Submissions */
+            deleted_submissions: number;
+            /** Restored Fixtures */
+            restored_fixtures: number;
+        };
         /** Body_create_submission_api_submissions_post */
         Body_create_submission_api_submissions_post: {
             /** Image */
@@ -346,7 +375,10 @@ export interface components {
              * @enum {string}
              */
             override_verdict: "pass" | "fail";
-            /** Comment */
+            /**
+             * Comment
+             * @default
+             */
             comment: string;
         };
         /** OverrideOut */
@@ -742,6 +774,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_demo_api_admin_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminResetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminResetOut"];
+                };
             };
             /** @description Validation Error */
             422: {

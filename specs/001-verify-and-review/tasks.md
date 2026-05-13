@@ -247,14 +247,14 @@ item, trigger reset; confirm the queue matches the original fixture set with all
 
 ### Tests for User Story 6
 
-- [ ] T077 [P] [US6] Contract test in `tests/api/test_admin_reset.py`: `POST /api/admin/reset` without `{confirm: true}` → 400; with confirm, deletes user submissions (and their cascades), resets fixtures to `loaded`, deletes user image keys, leaves fixture image keys.
+- [X] T077 [P] [US6] Contract test in `tests/api/test_admin_reset.py`: `POST /api/admin/reset` without `{confirm: true}` → 400; with confirm, deletes user submissions (and their cascades), resets fixtures to `loaded`, deletes user image keys, leaves fixture image keys.
 
 ### Implementation for User Story 6
 
-- [ ] T078 [US6] Backend: implement `app/api/admin.py::reset_demo`: validates `confirm == true`; in one transaction, deletes all `submissions WHERE is_fixture=False` (FK cascades clean `extractions`, `comparisons`, `field_overrides`, `reviews`); for `is_fixture=True` rows, deletes related extractions/comparisons/overrides/reviews and resets `status='loaded'`; calls `ImageStore.delete` for user-added image keys.
-- [ ] T079 [US6] Register `admin.router` in `app/main.py`; regenerate `frontend/src/api/generated.ts`.
-- [ ] T080 [P] [US6] Frontend: `frontend/src/components/ResetDemoButton.tsx` — button in the QueuePage footer; opens a confirmation modal; on confirm, calls `POST /api/admin/reset` with `{confirm: true}` and invalidates all queries.
-- [ ] T081 [US6] Frontend: place `ResetDemoButton` in `QueuePage.tsx` footer alongside the persistent demo banner.
+- [X] T078 [US6] Backend: implement `app/api/admin.py::reset_demo`: validates `confirm == true`; in one transaction, deletes all `submissions WHERE is_fixture=False` (FK cascades clean `extractions`, `comparisons`, `field_overrides`, `reviews`); for `is_fixture=True` rows, deletes related extractions/comparisons/overrides/reviews and resets `status='loaded'`; calls `ImageStore.delete` for user-added image keys.
+- [X] T079 [US6] Register `admin.router` in `app/main.py`; regenerate `frontend/src/api/generated.ts`.
+- [X] T080 [P] [US6] Frontend: `frontend/src/components/ResetDemoButton.tsx` — button in the QueuePage footer; opens a confirmation modal; on confirm, calls `POST /api/admin/reset` with `{confirm: true}` and invalidates all queries.
+- [X] T081 [US6] Frontend: place `ResetDemoButton` in `QueuePage.tsx` footer alongside the persistent demo banner.
 
 **Checkpoint**: Spec AS 6.1–6.3 pass.
 

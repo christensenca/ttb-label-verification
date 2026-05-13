@@ -28,6 +28,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
+from app.api import admin as admin_api
 from app.api import decisions as decisions_api
 from app.api import overrides as overrides_api
 from app.api import submissions as submissions_api
@@ -83,6 +84,7 @@ def create_app() -> FastAPI:
     app.include_router(submissions_api.router)
     app.include_router(decisions_api.router)
     app.include_router(overrides_api.router)
+    app.include_router(admin_api.router)
 
     @app.get("/healthz", tags=["health"])
     def healthz() -> Response:
