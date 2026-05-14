@@ -77,13 +77,17 @@
 
 .app-topbar-inner {
   width: 100%;
-  max-width: 1126px;
-  margin: 0 auto;
-  padding: 14px 32px;
+  padding: 12px 32px;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-brand-logo {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: block;
 }
 
 .app-brand {
@@ -91,11 +95,15 @@
   font-weight: 600;
   letter-spacing: -0.3px;
   color: var(--text-h);
+  line-height: 1;
 }
 
 .app-subtitle {
   font-size: 13px;
   color: var(--text);
+  margin-left: 4px;
+  align-self: baseline;
+  padding-bottom: 1px;
 }
 
 .app-content {

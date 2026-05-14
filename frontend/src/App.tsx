@@ -8,6 +8,12 @@ function Layout() {
     <div className="app-shell">
       <header className="app-topbar">
         <div className="app-topbar-inner">
+          <img
+            src="/favicon.svg"
+            alt=""
+            aria-hidden="true"
+            className="app-brand-logo"
+          />
           <span className="app-brand">LabelGuard</span>
           <span className="app-subtitle">AI-assisted TTB review</span>
         </div>
