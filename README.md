@@ -72,7 +72,7 @@ Copy `.env.example` to `.env` and fill in real values:
 
 ```dotenv
 OPENROUTER_API_KEY=sk-or-...                    # vision model key
-OPENROUTER_MODEL=google/gemini-3.1-pro-preview  # default if unset
+OPENROUTER_MODEL=google/gemini-3.1-flash-lite   # default if unset
 EXTRACTION_CONCURRENCY=3                        # background-task semaphore
 
 DATABASE_URL=postgresql+psycopg://ttb:ttb@localhost:5432/ttb_verify

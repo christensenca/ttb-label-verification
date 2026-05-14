@@ -33,7 +33,7 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
-DEFAULT_MODEL = "google/gemini-3.1-pro-preview"
+DEFAULT_MODEL = "google/gemini-3.1-flash-lite"
 DEFAULT_IMAGE_LONG_SIDE = 1536  # Currently-checked-in composites are this size.
 
 # Per-attempt request timeout for the OpenRouter call. Without this the

@@ -101,8 +101,8 @@ def test_prompt_separates_warning_header_bold_from_body_bold():
     assert "warning text after the header" in SYSTEM_PROMPT
 
 
-def test_default_model_is_gemini_pro_preview():
-    assert DEFAULT_MODEL == "google/gemini-3.1-pro-preview"
+def test_default_model_is_gemini_flash_lite():
+    assert DEFAULT_MODEL == "google/gemini-3.1-flash-lite"
 
 
 def test_prompt_describes_warning_bold_concisely():

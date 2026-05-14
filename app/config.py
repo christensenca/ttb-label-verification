@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # --- Pipeline (extraction) ---
     openrouter_api_key: str = Field(default="", alias="OPENROUTER_API_KEY")
     openrouter_model: str = Field(
-        default="google/gemini-3.1-pro-preview", alias="OPENROUTER_MODEL"
+        default="google/gemini-3.1-flash-lite", alias="OPENROUTER_MODEL"
     )
     extraction_concurrency: int = Field(default=3, alias="EXTRACTION_CONCURRENCY", ge=1)
 
