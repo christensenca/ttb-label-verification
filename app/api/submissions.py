@@ -119,7 +119,11 @@ def _check_image_content(content: bytes) -> tuple[str | None, str | None]:
 @router.get("/submissions", response_model=list[SubmissionListItem])
 def list_submissions(db: Session = Depends(get_db)) -> list[SubmissionListItem]:
     rows = (
-        db.execute(select(Submission).order_by(Submission.created_at.desc()))
+        db.execute(
+            select(Submission).order_by(
+                Submission.created_at.desc(), Submission.id
+            )
+        )
         .scalars()
         .all()
     )
