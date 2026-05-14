@@ -1,22 +1,54 @@
-# TTB Label Verification
+# LabelGuard
 
 AI-powered prototype for verifying TTB alcohol beverage labels against
 application data. Take-home project for the TTB compliance division.
 
-## What this is
+## Approach
 
-A single-container web app that lets a reviewer:
+- Reviewer uploads a label image plus expected values (single form or
+  batched CSV manifest of up to 100 rows).
+- One vision-LLM call per label extracts the seven TTB-required fields
+  plus Government Warning text and bold style, returned as a
+  schema-enforced structured object.
+- The pipeline normalizes both sides (case, units, abbreviations) and
+  compares with deterministic per-field rules — fuzzy match for text,
+  numeric tolerance for ABV, strict equality for the warning text.
+- Each submission lands in a review queue; a human reviewer approves,
+  rejects with structured reasons, or overrides any verdict with a
+  free-text comment. Model verdicts are preserved alongside overrides
+  for audit.
+- Background extraction runs as an in-process asyncio task pool gated
+  by a configurable concurrency semaphore — one container, one port,
+  no Celery / Redis / external queue.
 
-1. Drop in a label image plus the expected values (brand, alcohol content,
-   producer, government warning, etc.).
-2. Hit **Run** and watch a vision model extract values from the image and
-   compare them to the expected ones, field by field.
-3. Review the per-field verdicts with inline word-diffs on text mismatches,
-   open the source image at readable size, override a verdict with a comment,
-   and approve or reject the submission with structured reasons.
+Full request lifecycle, status state machine, and per-field rules:
+[docs/APPROACH.md](docs/APPROACH.md).
 
-Seven preloaded fixtures ship with the app; reviewers can also add their own
-items and reset the demo to its original state.
+## Assumptions
+
+- Input is one label image per submission (JPEG / PNG / WebP) plus a
+  CSV manifest of expected values for batches (or a JSON form for a
+  single upload). No PDF intake.
+- Labels are English; the Government Warning is checked against the
+  canonical 27 CFR 16.21 wording.
+- The seven core required fields apply across beer, wine, and spirits
+  (27 CFR Parts 4 / 5 / 7) — the schema generalizes even though our
+  test corpus is distilled spirits.
+- A human reviewer is always in the loop. The model proposes; it
+  never auto-approves.
+- Reviewers can override any verdict with a free-text comment;
+  overrides persist alongside the model output so the audit trail
+  shows both.
+- Comparison is deterministic per-field (fuzzy match, numeric
+  tolerance, unit-aware, strict for the warning) — no LLM-as-judge.
+- The UI is intentionally simple — clean enough for a non-technical
+  agent (Sarah's "my mother could figure it out" benchmark from the
+  stakeholder interviews).
+- Outbound network to a hosted vision model (OpenRouter today,
+  Azure OpenAI in production) is available from the container.
+
+What we *deliberately* gave up to ship this scope:
+[docs/TRADEOFFS.md](docs/TRADEOFFS.md).
 
 ## Stack
 
@@ -114,6 +146,9 @@ Set the env vars listed above via `az containerapp update --set-env-vars`.
 
 ## Docs
 
+- [Approach](docs/APPROACH.md) — request lifecycle, status state machine, per-field rules
+- [Tradeoffs and limitations](docs/TRADEOFFS.md) — what we gave up and what production would change
+- [Architecture decisions](docs/architecture-decisions.md) — what we chose and why
 - [Quickstart](specs/001-verify-and-review/quickstart.md) — full bootstrap walk-through
 - [Spec](specs/001-verify-and-review/spec.md) — user stories and acceptance scenarios
 - [Plan](specs/001-verify-and-review/plan.md) — tech choices and architecture
@@ -122,4 +157,3 @@ Set the env vars listed above via `az containerapp update --set-env-vars`.
 - [Constitution](.specify/memory/constitution.md) — engineering principles
 - [Assignment brief](assigment.md) — original problem statement
 - [Interview highlights](docs/interview-highlights.md) — domain context
-- [Architecture decisions](docs/architecture-decisions.md) — recorded trade-offs
