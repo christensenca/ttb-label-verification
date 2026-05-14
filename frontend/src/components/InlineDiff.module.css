@@ -11,10 +11,12 @@
   /* baseline text */
 }
 
-/* Extracted-side semantics:
+/* Extracted-side semantics — single error color (red), typography distinguishes kind:
  *   .added   = token present in extracted but not expected (wrong/extra).
+ *              Strike-through reads as "delete from extracted".
  *   .removed = token present in expected but not extracted (missing — shown
  *              inline at the gap position as a "should be here" marker).
+ *              No strike-through; just a red highlight indicating a deviation.
  */
 .added {
   background-color: #ffcdd2;
@@ -25,8 +27,8 @@
 }
 
 .removed {
-  background-color: #c8e6c9;
-  color: #1b5e20;
+  background-color: #ffcdd2;
+  color: #b71c1c;
   padding: 0 1px;
   border-radius: 2px;
 }
