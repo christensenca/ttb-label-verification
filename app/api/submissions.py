@@ -65,46 +65,52 @@ async def _read_capped(upload: UploadFile, max_bytes: int) -> bytes:
     return bytes(buf)
 
 
-def _matches_magic(content: bytes, content_type: str) -> bool:
-    """Verify the byte signature matches the client-declared content type.
+def _detect_image_type(content: bytes) -> str | None:
+    """Return the canonical content-type derived from the file's magic bytes.
 
-    Defense against an attacker uploading arbitrary bytes (e.g., an
-    executable) under a permitted image content-type.
+    Trusting the bytes (not the client-declared content-type) is both more
+    secure — an attacker can lie about the content-type to smuggle arbitrary
+    bytes through — and more forgiving of real-world uploads where the file
+    extension or browser-supplied MIME doesn't match the actual format
+    (e.g., a PNG saved with a .jpg extension).
     """
-    if content_type in {"image/jpeg", "image/jpg"}:
-        return content.startswith(b"\xff\xd8\xff")
-    if content_type == "image/png":
-        return content.startswith(b"\x89PNG\r\n\x1a\n")
-    if content_type == "image/webp":
-        return content.startswith(b"RIFF") and content[8:12] == b"WEBP"
-    return False
+    if content.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if content.startswith(b"RIFF") and content[8:12] == b"WEBP":
+        return "image/webp"
+    return None
 
 
-def _check_image_content(content: bytes, content_type: str) -> str | None:
-    """Run every post-read image check; return an error string or None.
+def _check_image_content(content: bytes) -> tuple[str | None, str | None]:
+    """Run every post-read image check.
 
-    Combines: empty-body, magic-byte/content-type match, Pillow header
-    decode (catches corrupt/truncated images), and a pixel-count cap that
-    blocks decompression-bomb images claiming huge dimensions in a small
-    file.
+    Returns ``(detected_content_type, error_message)``. On success the
+    detected type is non-None and the error is None; on failure the detected
+    type is None and the error explains why. Combines: empty-body, magic-byte
+    detection, Pillow header decode (catches corrupt/truncated images), and
+    a pixel-count cap that blocks decompression-bomb images claiming huge
+    dimensions in a small file.
     """
     if not content:
-        return "image file is empty"
-    if not _matches_magic(content, content_type):
-        return f"file bytes do not match declared content type {content_type}"
+        return None, "image file is empty"
+    detected = _detect_image_type(content)
+    if detected is None:
+        return None, "file is not a recognized image (expected JPEG, PNG, or WebP)"
     try:
         with Image.open(io.BytesIO(content)) as img:
             img.verify()
         with Image.open(io.BytesIO(content)) as img:
             width, height = img.size
     except (UnidentifiedImageError, OSError, ValueError) as exc:
-        return f"invalid image: {exc}"
+        return None, f"invalid image: {exc}"
     if width * height > MAX_IMAGE_PIXELS:
-        return (
+        return None, (
             f"image dimensions {width}x{height} exceed pixel limit "
             f"({MAX_IMAGE_PIXELS:,} px)"
         )
-    return None
+    return detected, None
 
 
 # --- List ------------------------------------------------------------------
@@ -149,9 +155,6 @@ def list_submissions(db: Session = Depends(get_db)) -> list[SubmissionListItem]:
 # --- Create ----------------------------------------------------------------
 
 
-_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
-
-
 @router.post(
     "/submissions",
     response_model=SubmissionCreateOut,
@@ -167,17 +170,15 @@ async def create_submission(
     if expected_values is None:
         raise HTTPException(status_code=400, detail="expected_values is required")
 
-    content_type = (image.content_type or "").lower()
-    if content_type not in _ALLOWED_IMAGE_TYPES:
-        raise HTTPException(
-            status_code=415,
-            detail=f"unsupported image content type: {content_type or 'unknown'}",
-        )
-
     content = await _read_capped(image, MAX_IMAGE_BYTES)
-    err = _check_image_content(content, content_type)
+    detected, err = _check_image_content(content)
     if err is not None:
-        raise HTTPException(status_code=400, detail=err)
+        # 415 if we can't recognize the bytes as any supported image format,
+        # 400 if the format is recognized but the file is corrupt or oversize.
+        status_code = 400 if _detect_image_type(content) is not None else 415
+        raise HTTPException(status_code=status_code, detail=err)
+    assert detected is not None  # narrow for type checker
+    content_type = detected
 
     try:
         parsed = json.loads(expected_values)
@@ -322,10 +323,6 @@ async def create_submissions_bulk(
                 BulkErrorOut(filename=name, reason="duplicate image filename in upload")
             )
             continue
-        ct = (upload.content_type or "").lower()
-        if ct not in _ALLOWED_IMAGE_TYPES:
-            image_blobs[name] = (b"", ct, f"unsupported image content type: {ct or 'unknown'}")
-            continue
         content = await _read_capped(upload, MAX_IMAGE_BYTES)
         total_bytes += len(content)
         if total_bytes > MAX_BULK_TOTAL_BYTES:
@@ -336,8 +333,8 @@ async def create_submissions_bulk(
                     "total upload limit"
                 ),
             )
-        check = _check_image_content(content, ct)
-        image_blobs[name] = (content, ct, check)
+        detected, check = _check_image_content(content)
+        image_blobs[name] = (content, detected or "", check)
 
     csv_filenames_seen: set[str] = set()
     used_filenames: set[str] = set()

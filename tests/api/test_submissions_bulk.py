@@ -16,6 +16,12 @@ def _jpeg(width: int = 4, height: int = 4, color=(120, 60, 30)) -> bytes:
     return buf.getvalue()
 
 
+def _png(width: int = 4, height: int = 4, color=(50, 200, 100)) -> bytes:
+    buf = io.BytesIO()
+    Image.new("RGB", (width, height), color=color).save(buf, format="PNG")
+    return buf.getvalue()
+
+
 _HEADER = (
     "filename,brand,class_type,alcohol_content,net_contents,"
     "producer_name,producer_address,is_imported,country_of_origin"
@@ -220,3 +226,24 @@ def test_bulk_invalid_imported_country_combo_flagged(client):
     assert response.status_code == 200, response.text
     assert body["created"] == []
     assert any("country_of_origin" in e["reason"] for e in body["errors"])
+
+
+def test_bulk_mislabeled_content_type_is_accepted(client):
+    # Real-world case: PNG bytes saved with a .jpg extension and uploaded
+    # under image/jpeg. We trust the file's magic bytes, not the
+    # client-declared content-type.
+    csv = (
+        f"{_HEADER}\n"
+        "mislabeled.jpg,Brand Mis,Whisky,40.0,750 mL,Producer,City ST,false,\n"
+    )
+    response = client.post(
+        "/api/submissions/bulk",
+        files=[
+            ("csv", ("manifest.csv", io.BytesIO(csv.encode()), "text/csv")),
+            *_files(("mislabeled.jpg", _png(), "image/jpeg")),
+        ],
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["errors"] == []
+    assert len(body["created"]) == 1

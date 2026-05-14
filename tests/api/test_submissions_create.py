@@ -105,24 +105,29 @@ def test_create_submission_oversize_image_returns_400(client):
     assert response.status_code == 400, response.text
 
 
-def test_create_submission_wrong_content_type_returns_415(client):
+def test_create_submission_non_image_bytes_returns_415(client):
+    # Non-image bytes: we trust the file's magic, not the client-declared
+    # content-type. Anything that doesn't match a supported image signature
+    # comes back as 415 "not a recognized image".
     response = client.post(
         "/api/submissions",
         files={"image": ("label.txt", io.BytesIO(b"not an image"), "text/plain")},
         data={"expected_values": json.dumps(_expected_values_payload())},
     )
     assert response.status_code == 415, response.text
+    assert "not a recognized image" in response.json()["detail"]
 
 
-def test_create_submission_magic_byte_mismatch_returns_400(client):
-    # Content-type claims PNG but the bytes are arbitrary garbage.
+def test_create_submission_mislabeled_content_type_is_accepted(client):
+    # Real-world case: a PNG saved with a .jpg extension and uploaded as
+    # image/jpeg. We trust the bytes and accept it.
+    png_bytes = _make_png(width=10, height=10)
     response = client.post(
         "/api/submissions",
-        files={"image": ("fake.png", io.BytesIO(b"not really a png at all"), "image/png")},
+        files={"image": ("mislabeled.jpg", io.BytesIO(png_bytes), "image/jpeg")},
         data={"expected_values": json.dumps(_expected_values_payload())},
     )
-    assert response.status_code == 400, response.text
-    assert "do not match" in response.json()["detail"]
+    assert response.status_code == 201, response.text
 
 
 def test_create_submission_truncated_jpeg_returns_400(client):
