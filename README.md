@@ -66,6 +66,13 @@ Everything (API, SPA, static assets) is served from one container on one port.
 No Redis, no Celery, no external queue — background processing is an asyncio
 task pool with a configurable concurrency semaphore.
 
+## Prerequisites
+
+- Python 3.11+ with [`uv`](https://docs.astral.sh/uv/)
+- Node 20+ with [`pnpm`](https://pnpm.io/)
+- PostgreSQL 14+ running locally (or use the Docker option below)
+- An [OpenRouter API key](https://openrouter.ai/settings/keys)
+
 ## Environment
 
 Copy `.env.example` to `.env` and fill in real values:
@@ -99,6 +106,22 @@ docs/          # planning notes and architecture decisions
 
 ## Quick start
 
+Create the local Postgres role + database (Homebrew):
+
+```sh
+createuser -s ttb && createdb -O ttb ttb_verify
+```
+
+Or run Postgres in Docker:
+
+```sh
+docker run -d --name ttb-pg \
+  -e POSTGRES_USER=ttb -e POSTGRES_PASSWORD=ttb -e POSTGRES_DB=ttb_verify \
+  -p 5432:5432 postgres:16
+```
+
+Backend (terminal 1):
+
 ```sh
 uv sync
 uv run alembic upgrade head
@@ -106,10 +129,12 @@ uv run python -m app.db.seed
 uv run uvicorn app.main:app --reload      # API on :8000
 ```
 
+Frontend (terminal 2 — backend must be running for `gen:api`):
+
 ```sh
 cd frontend
 pnpm install
-pnpm gen:api
+pnpm gen:api                              # reads http://localhost:8000/openapi.json
 pnpm dev                                  # SPA on :5173
 ```
 
