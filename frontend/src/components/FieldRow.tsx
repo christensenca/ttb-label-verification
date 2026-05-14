@@ -78,6 +78,16 @@ function renderValue(field: Field, side: 'extracted' | 'expected') {
   if (field.field === 'government_warning_style') {
     return renderBoldFormattingCell(field, side)
   }
+  // Domestic submissions: the model often misreads producer city/state as
+  // country of origin (e.g. "Long Beach, CA"). The comparator tolerates it
+  // and the verdict passes, but the leaked text in the extracted cell is
+  // confusing. When there's no expected country, blank the row entirely.
+  if (
+    field.field === 'country_of_origin' &&
+    (field.expected_value == null || field.expected_value === '')
+  ) {
+    return <span className={styles.empty}>—</span>
+  }
   const value = side === 'extracted' ? field.extracted_value : field.expected_value
   const diffTokens =
     side === 'extracted' ? field.diff_extracted : field.diff_expected
