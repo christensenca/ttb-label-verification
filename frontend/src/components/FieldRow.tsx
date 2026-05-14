@@ -4,6 +4,7 @@ import type { components } from '../api/generated'
 import InlineDiff from './InlineDiff'
 import ConfidenceBadge from './ConfidenceBadge'
 import OverrideDialog from './OverrideDialog'
+import { rowColorClass } from './fieldRowState'
 import styles from './FieldRow.module.css'
 
 type Field = components['schemas']['FieldRowOut']
@@ -23,27 +24,9 @@ const FIELD_LABELS: Record<string, string> = {
   government_warning_style: 'Bold formatting',
 }
 
-const NON_TEXT_FIELDS = new Set(['is_imported', 'government_warning_style'])
-
 // Word-diff highlighting is only meaningful on the long-form government
 // warning text — the case where a one-word deviation is easy to miss.
 const DIFF_FIELDS = new Set(['government_warning_text'])
-
-export type RowColor = 'green' | 'yellow' | 'red' | 'grey'
-
-/**
- * Tri-state row color per research.md R11 truth table. No longer rendered as
- * a row background; surfaced as a `data-row-state` attribute for testing.
- */
-export function rowColorClass(field: Field): RowColor {
-  if (field.effective_verdict === 'not_applicable') return 'grey'
-  if (field.effective_verdict === 'fail') return 'red'
-  const isText = !NON_TEXT_FIELDS.has(field.field)
-  if (isText && (field.confidence === 'low' || field.confidence === 'med')) {
-    return 'yellow'
-  }
-  return 'green'
-}
 
 function capitalize(v: string): string {
   return v.charAt(0).toUpperCase() + v.slice(1)

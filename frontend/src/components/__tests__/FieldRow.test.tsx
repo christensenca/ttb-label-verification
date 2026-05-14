@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rowColorClass } from '../FieldRow'
+import { rowColorClass } from '../fieldRowState'
 import type { components } from '../../api/generated'
 
 type Field = components['schemas']['FieldRowOut']

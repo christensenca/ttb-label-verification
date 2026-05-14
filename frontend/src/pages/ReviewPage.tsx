@@ -8,8 +8,8 @@ import DecisionPanel, { type RejectionCandidate } from '../components/DecisionPa
 import ExtractionFailedBanner from '../components/ExtractionFailedBanner'
 import FieldGroup from '../components/FieldGroup'
 import ImageLightbox from '../components/ImageLightbox'
-import { STATUS_LABEL } from '../components/QueueTable'
 import ReviewToolbar from '../components/ReviewToolbar'
+import { STATUS_LABEL } from '../components/submissionStatus'
 
 type Detail = components['schemas']['SubmissionDetailOut']
 
