@@ -5,6 +5,9 @@ When the extractor raises:
   - 10 synthesized `Comparison` rows exist with `rule='extraction failed'`
     and `verdict='fail'` (or `'not_applicable'` where appropriate)
   - submission status flips to `extraction_failed`
+
+The startup rescue produces the same failure-shaped record so a row
+abandoned mid-run by a previous boot renders the same banner + override UI.
 """
 
 from __future__ import annotations
@@ -13,6 +16,7 @@ from sqlalchemy import select
 
 from app.api.schemas import ALL_FIELDS
 from app.db.models import Comparison, Extraction, Submission
+from app.services import processor
 
 
 def test_processor_failure_writes_synthesized_rows_and_flips_status(
@@ -75,3 +79,55 @@ def test_processor_failure_writes_synthesized_rows_and_flips_status(
         assert c.extracted_value is None
         assert c.diff_extracted is None
         assert c.diff_expected is None
+
+
+def test_rescue_processing_on_startup_writes_failure_shaped_rows(db_session):
+    sub = Submission(
+        image_key="sha256:rescue.jpg",
+        expected_values={
+            "brand": "Don Julio",
+            "class_type": "Tequila Blanco",
+            "alcohol_content": 40.0,
+            "net_contents": "750 mL",
+            "producer_name": "Diageo",
+            "producer_address": "New York, NY",
+            "is_imported": True,
+            "country_of_origin": "Mexico",
+        },
+        status="processing",
+        is_fixture=True,
+    )
+    db_session.add(sub)
+    db_session.flush()
+    submission_id = sub.id
+
+    rescued = processor.rescue_processing_on_startup(
+        session_factory=lambda: db_session
+    )
+    assert rescued == 1
+
+    refreshed = db_session.get(Submission, submission_id)
+    assert refreshed.status == "extraction_failed"
+
+    extractions = (
+        db_session.execute(
+            select(Extraction).where(Extraction.submission_id == submission_id)
+        )
+        .scalars()
+        .all()
+    )
+    assert len(extractions) == 1
+    assert extractions[0].error and "rescued" in extractions[0].error
+    assert extractions[0].extracted_label is None
+
+    comparisons = (
+        db_session.execute(
+            select(Comparison).where(Comparison.submission_id == submission_id)
+        )
+        .scalars()
+        .all()
+    )
+    assert {c.field for c in comparisons} == set(ALL_FIELDS)
+    for c in comparisons:
+        assert c.rule == "extraction failed"
+        assert c.extracted_value is None

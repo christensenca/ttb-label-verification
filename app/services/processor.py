@@ -92,34 +92,55 @@ def _get_semaphore() -> asyncio.Semaphore:
     return _semaphore
 
 
+# Wall-clock cap on a single submission's processing. Generous given
+# pipeline.extract's per-attempt timeout (30s) × up-to-4 attempts + backoff.
+_PROCESS_TIMEOUT_SECONDS = 300.0
+
+
 # --- Startup rescue --------------------------------------------------------
 
 
-def rescue_processing_on_startup() -> int:
-    """Flip any rows stuck in `processing` to `extraction_failed`.
+def rescue_processing_on_startup(
+    *,
+    session_factory: Callable[[], Session] | None = None,
+) -> int:
+    """Rescue any rows stuck in `processing` from a previous run.
 
     Anything left in `processing` at boot is from a previous run that died
-    mid-flight; mark them failed so the queue is never stuck.
+    mid-flight. Each stuck row is converted to a full failure record (the
+    same shape as a live extractor exception) so the review UI renders the
+    error banner and the synthesized field rows — without those, the row
+    looks broken to the reviewer.
     """
-    with SessionLocal() as session:
-        ids = list(
+    factory = session_factory or SessionLocal
+    owns_session = session_factory is None
+    session = factory()
+    rescued: list[uuid.UUID] = []
+    try:
+        stuck = (
             session.execute(
-                update(Submission)
-                .where(Submission.status == "processing")
-                .values(status="extraction_failed")
-                .returning(Submission.id)
+                select(Submission).where(Submission.status == "processing")
             )
             .scalars()
             .all()
         )
-        session.commit()
-    if ids:
+        for sub in stuck:
+            expected = dict(sub.expected_values)
+            exc = RuntimeError(
+                "rescued: processing did not finish before restart"
+            )
+            _write_failure(session, sub, expected, exc)
+            rescued.append(sub.id)
+    finally:
+        if owns_session:
+            session.close()
+    if rescued:
         logger.warning(
             "rescue: marked %d processing submissions as extraction_failed: %s",
-            len(ids),
-            ids,
+            len(rescued),
+            rescued,
         )
-    return len(ids)
+    return len(rescued)
 
 
 # --- Per-submission processing ---------------------------------------------
@@ -177,7 +198,8 @@ def process_submission(
             logger.exception(
                 "processor: extraction failed for %s", submission_id
             )
-            _write_failure(session, sub, expected, exc)
+            if _still_processing(session, sub):
+                _write_failure(session, sub, expected, exc)
             return
 
         try:
@@ -219,6 +241,17 @@ def process_submission(
                         diff_expected=diff_expected,
                     )
                 )
+            # Guard against a watchdog/rescue having already terminated this
+            # row while the extractor was running. Without this, a slow
+            # extraction that completes after a timeout would resurrect the
+            # row to ready_for_review with a duplicate set of writes.
+            if not _still_processing(session, sub):
+                session.rollback()
+                logger.info(
+                    "processor: submission %s already terminal; abandoning success write",
+                    submission_id,
+                )
+                return
             sub.status = "ready_for_review"
             session.commit()
             logger.info(
@@ -246,10 +279,24 @@ def process_submission(
                 "processor: post-extract failure for %s", submission_id
             )
             session.rollback()
-            _write_failure(session, None, expected, exc, submission_id=submission_id)
+            if _still_processing(session, sub):
+                _write_failure(session, None, expected, exc, submission_id=submission_id)
     finally:
         if owns_session:
             session.close()
+
+
+def _still_processing(session: Session, sub: Submission) -> bool:
+    """Refresh `sub` and return True iff its status is still `processing`.
+
+    Used to avoid racing with a watchdog/rescue that may have already
+    terminated the row while extraction was in flight.
+    """
+    try:
+        session.refresh(sub)
+    except Exception:  # noqa: BLE001 — refresh failure shouldn't crash the worker
+        return True
+    return sub.status == "processing"
 
 
 def _write_failure(
@@ -319,6 +366,37 @@ def _write_failure(
     )
 
 
+def _write_timeout_failure(
+    submission_id: uuid.UUID,
+    timeout_seconds: float,
+    *,
+    session_factory: Callable[[], Session] | None = None,
+) -> None:
+    """Persist a timeout-shaped failure record from a fresh session.
+
+    Called when the per-task wall-clock budget expires before
+    `process_submission` returns. Uses a separate session because the
+    extractor thread is still holding the original one.
+    """
+    factory = session_factory or SessionLocal
+    owns_session = session_factory is None
+    session = factory()
+    try:
+        sub = session.get(Submission, submission_id)
+        if sub is None:
+            return
+        if sub.status != "processing":
+            # The extractor thread already finished, or another rescue/
+            # watchdog already terminated this row. Nothing to do.
+            return
+        expected = dict(sub.expected_values)
+        exc = TimeoutError(f"processing exceeded {timeout_seconds:g}s")
+        _write_failure(session, sub, expected, exc)
+    finally:
+        if owns_session:
+            session.close()
+
+
 # --- Start all loaded ------------------------------------------------------
 
 
@@ -362,13 +440,17 @@ def _schedule_processing(ids: Iterable[uuid.UUID]) -> None:
 
     Each task runs `process_submission` (sync) inside a worker thread so the
     OpenAI client's blocking I/O does not stall the event loop. The
-    semaphore caps the number of concurrent vision calls.
+    semaphore caps the number of concurrent vision calls. Each task is
+    wrapped with a per-submission wall-clock timeout so a hung extractor
+    cannot wedge the row indefinitely.
     """
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
         # No running loop (e.g., invoked from a sync context outside FastAPI).
         # Fall back to running the tasks inline; acceptable for the prototype.
+        # The async wall-clock timeout doesn't apply here — the inline path
+        # is only used by scripts/CLI, not the production request flow.
         for sid in ids:
             try:
                 process_submission(submission_id=sid)
@@ -380,7 +462,47 @@ def _schedule_processing(ids: Iterable[uuid.UUID]) -> None:
 
     async def _run_one(sid: uuid.UUID) -> None:
         async with sem:
-            await asyncio.to_thread(process_submission, sid)
+            await _run_with_timeout(sid)
 
     for sid in ids:
         loop.create_task(_run_one(sid))
+
+
+async def _run_with_timeout(
+    submission_id: uuid.UUID,
+    *,
+    session_factory: Callable[[], Session] | None = None,
+    image_path: str | Path | None = None,
+    extractor: Callable[..., pipeline_extract.ExtractionResult] | None = None,
+) -> None:
+    """Run `process_submission` with a wall-clock timeout.
+
+    On timeout the extractor thread is left to drain (Python threads can't
+    be cancelled), but the submission is marked failed via a fresh session
+    so the queue advances. The status guard inside `process_submission`
+    prevents the late-completing thread from overwriting the failure.
+    """
+    timeout = _PROCESS_TIMEOUT_SECONDS  # read at call time so tests can monkeypatch
+    try:
+        await asyncio.wait_for(
+            asyncio.to_thread(
+                process_submission,
+                submission_id,
+                session_factory=session_factory,
+                image_path=image_path,
+                extractor=extractor,
+            ),
+            timeout=timeout,
+        )
+    except asyncio.TimeoutError:
+        logger.warning(
+            "processor: submission %s exceeded %ss; writing timeout failure",
+            submission_id,
+            timeout,
+        )
+        await asyncio.to_thread(
+            _write_timeout_failure,
+            submission_id,
+            timeout,
+            session_factory=session_factory,
+        )

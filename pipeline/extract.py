@@ -16,19 +16,45 @@ from __future__ import annotations
 
 import base64
 import io
+import logging
 import os
+import random
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TypeVar
 
+import openai
 from openai import OpenAI
 from PIL import Image
 from pydantic import BaseModel, Field
 
+logger = logging.getLogger(__name__)
+
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_MODEL = "google/gemini-3.1-pro-preview"
 DEFAULT_IMAGE_LONG_SIDE = 1536  # Currently-checked-in composites are this size.
+
+# Per-attempt request timeout for the OpenRouter call. Without this the
+# OpenAI SDK falls back to ~10 minutes, which is far too generous for a
+# single vision call and makes retries useless.
+_REQUEST_TIMEOUT_SECONDS = 30.0
+
+# Retry budget for transient OpenRouter errors (timeouts, 429, 5xx).
+# Total attempts = 1 + _MAX_RETRIES.
+_MAX_RETRIES = 3
+_BACKOFF_BASE_SECONDS = 1.0
+_BACKOFF_MAX_SECONDS = 8.0
+
+_RETRYABLE_OPENAI_ERRORS: tuple[type[BaseException], ...] = (
+    openai.APITimeoutError,
+    openai.APIConnectionError,
+    openai.RateLimitError,
+    openai.InternalServerError,
+)
+
+_T = TypeVar("_T")
 
 ExtractionConfidence = Literal["low", "med", "hi"]
 
@@ -277,23 +303,25 @@ def extract(
     image_data_url = _image_to_data_url(path, long_side=image_long_side)
 
     start = time.perf_counter()
-    response = client.beta.chat.completions.parse(
-        model=model,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": image_data_url, "detail": "high"},
-                    },
-                ],
-            },
-        ],
-        response_format=LabelExtractionResponse,
-        temperature=temperature,
-        max_tokens=8192,
+    response = _call_with_retries(
+        lambda: client.beta.chat.completions.parse(
+            model=model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data_url, "detail": "high"},
+                        },
+                    ],
+                },
+            ],
+            response_format=LabelExtractionResponse,
+            temperature=temperature,
+            max_tokens=8192,
+        )
     )
     latency_ms = (time.perf_counter() - start) * 1000
 
@@ -321,7 +349,45 @@ def _default_client() -> OpenAI:
             "OPENROUTER_API_KEY not set. Copy .env.example to .env and add a key, "
             "or pass a configured OpenAI client to extract()."
         )
-    return OpenAI(base_url=DEFAULT_BASE_URL, api_key=api_key)
+    return OpenAI(
+        base_url=DEFAULT_BASE_URL,
+        api_key=api_key,
+        timeout=_REQUEST_TIMEOUT_SECONDS,
+    )
+
+
+def _call_with_retries(call: Callable[[], _T]) -> _T:
+    """Invoke `call` with bounded exponential backoff for transient OpenAI errors.
+
+    Retryable: APITimeoutError, APIConnectionError, RateLimitError (429),
+    InternalServerError (5xx). All other exceptions (including BadRequestError,
+    AuthenticationError, and PIL/local errors) propagate immediately.
+    """
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            return call()
+        except _RETRYABLE_OPENAI_ERRORS as exc:
+            if attempt == _MAX_RETRIES:
+                logger.warning(
+                    "extract: %s after %d attempts; giving up",
+                    type(exc).__name__,
+                    attempt + 1,
+                )
+                raise
+            base_sleep = min(
+                _BACKOFF_MAX_SECONDS,
+                _BACKOFF_BASE_SECONDS * (2**attempt),
+            )
+            sleep_s = base_sleep + random.uniform(0.0, 0.25 * base_sleep)
+            logger.warning(
+                "extract: %s on attempt %d/%d; retrying in %.2fs",
+                type(exc).__name__,
+                attempt + 1,
+                _MAX_RETRIES + 1,
+                sleep_s,
+            )
+            time.sleep(sleep_s)
+    raise RuntimeError("unreachable")  # pragma: no cover
 
 
 def _image_to_data_url(path: Path, *, long_side: int = 0) -> str:

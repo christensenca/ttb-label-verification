@@ -1,5 +1,7 @@
 # LabelGuard
 
+**Live demo:** https://ttb-web-production.up.railway.app/
+
 AI-powered prototype for verifying TTB alcohol beverage labels against
 application data. Take-home project for the TTB compliance division.
 
