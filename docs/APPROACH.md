@@ -172,14 +172,21 @@ reviewer can re-run the extraction, decide as-is, or reject. See
 
 | Failure                                    | Recovery                                              |
 | ------------------------------------------ | ----------------------------------------------------- |
-| Vision call returns an error / times out   | Submission lands in `extraction_failed`; siblings unaffected |
-| Container restarts mid-extraction          | Boot-time rescue flips `processing` → `extraction_failed` with reason `"interrupted"` |
-| Reviewer disagrees with a model verdict    | Override with comment; model verdict preserved       |
-| Reviewer needs to redo everything          | `POST /api/admin/reset` clears user data, re-seeds fixtures |
-| Same image uploaded twice                  | Storage is sha256-keyed; the second upload reuses the existing file |
+| Provider 429 / timeout / 5xx               | Bounded retry with exponential backoff + jitter (3 retries, 30s per attempt). Only terminal after retries are exhausted. |
+| Provider 4xx (auth, bad request)           | Fail immediately — retrying would just keep failing. Submission lands in `extraction_failed`. |
+| Model returns no parseable output          | Fail immediately (not transient). Submission lands in `extraction_failed`. |
+| Worker thread exceeds 5 min wall-clock     | Per-task `asyncio.wait_for` watchdog forcibly marks it `extraction_failed`; status guard prevents the late-completing thread from overwriting. |
+| Container restarts mid-extraction          | Boot-time rescue writes a full failure-shaped record (Extraction + 10 synthesized Comparisons) so the review banner and override controls render correctly. |
+| Reviewer disagrees with a model verdict    | Override with comment; model verdict preserved.      |
+| Reviewer needs to redo everything          | `POST /api/admin/reset` clears user data, re-seeds fixtures. |
+| Same image uploaded twice                  | Storage is sha256-keyed; the second upload reuses the existing file. |
 
-There is no automatic retry on the vision call. The reviewer's "Run"
-button is the retry. See [TRADEOFFS §7](TRADEOFFS.md).
+Failure-shaped records are uniform: every `extraction_failed` row has one
+Extraction row with the error message and 10 synthesized Comparison rows,
+so the review UI behaves identically whether the failure came from the
+extractor, the timeout watchdog, or the boot-time rescue. See
+[TRADEOFFS §7](TRADEOFFS.md) for what production-grade hardening would
+still add (Retry-After, env-configurable budgets, circuit breaker).
 
 ---
 

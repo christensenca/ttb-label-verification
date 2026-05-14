@@ -196,27 +196,46 @@ surface and the rest of the app don't change.
 
 ---
 
-## 7. No retry / rate-limit handling on the vision call
+## 7. Bounded retry on transient errors; no Retry-After / circuit breaker yet
 
-**Decision.** One attempt per submission. If OpenRouter returns a
-transient 429 or a timeout, the submission lands in
-`extraction_failed` and the reviewer re-runs it via the UI.
+**Decision.** Transient OpenRouter errors (`APITimeoutError`,
+`APIConnectionError`, `RateLimitError` / 429, `InternalServerError` / 5xx)
+are retried with bounded exponential backoff + jitter — 3 retries, 1s→8s
+base, ≤25% jitter — and an explicit 30s per-attempt timeout
+([`pipeline/extract.py`](../pipeline/extract.py) `_call_with_retries`).
+A 5-minute per-task wall-clock timeout in
+[`app/services/processor.py`](../app/services/processor.py)
+(`_run_with_timeout`) catches anything that retries can't, with a status
+guard so the late-completing extractor thread can't overwrite the
+watchdog's failure write. Boot-time rescue writes the full failure-shaped
+record, not just a status flip.
 
-**What we gave up.** Resilience to transient upstream failures. A
-429 burst from the provider during a 300-label batch surfaces to the
-reviewer as a list of failed items rather than getting absorbed
-silently by the system.
+**What we still gave up.** Three production-grade refinements:
 
-**Why this was right.** Retry-with-backoff sounds simple but tangles
-with the semaphore (do retries count against the concurrency limit?),
-the `interrupted` recovery path, and the polling status model. None
-of that is worth solving for a prototype with stable provider quotas.
-The Run button in the UI re-attempts failed items, which is the same
-thing a backoff loop would do, with a human in the loop.
+- **`Retry-After` header.** Providers (including OpenRouter) sometimes
+  send `Retry-After` on 429s with the exact recommended wait. We use our
+  own backoff math instead, which is correct in expectation but slightly
+  worse on tail latency during a real rate-limit incident.
+- **Env-configurable retry budgets.** `_MAX_RETRIES`, the timeout, and
+  the backoff bounds are module-level constants in `pipeline/extract.py`.
+  Promoting them to settings would let ops tune per environment without a
+  code change.
+- **Circuit breaker.** Right now if OpenRouter is fully down, every
+  submission burns ~130s of attempts before failing. A per-extractor
+  circuit breaker would short-circuit subsequent calls during an outage,
+  catching up faster once upstream recovers.
 
-**Production.** Exponential backoff with explicit 429 handling, a
-per-extractor circuit breaker, and a separate `transient_failure`
-status distinct from terminal `extraction_failed`.
+**Why this was right.** The implemented retry/timeout coverage absorbs
+the routine class of transient errors that turned every traffic spike
+into a manual-recovery wave under the previous "one attempt, then fail"
+model. The three refinements above are real but second-order — each one
+matters more once you're handling sustained traffic and tracking SLOs,
+neither of which a prototype faces. They sit cleanly on top of the
+current code; the boundary is the `_call_with_retries` helper.
+
+**Production.** Add `Retry-After` parsing to the retry helper; promote
+the four constants to `app/config.py`; add a circuit-breaker wrapper
+around `pipeline.extract.extract` keyed on the extractor identity.
 
 ---
 

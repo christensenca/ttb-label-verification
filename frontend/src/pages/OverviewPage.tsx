@@ -152,7 +152,7 @@ export default function OverviewPage() {
       <p className={styles.footerNote}>
         Full detail in the repo:{' '}
         <a
-          href="https://github.com/christensenca/ttb-label-verfication/blob/main/docs/APPROACH.md"
+          href="https://github.com/christensenca/ttb-label-verification/blob/main/docs/APPROACH.md"
           target="_blank"
           rel="noreferrer"
         >
@@ -160,7 +160,7 @@ export default function OverviewPage() {
         </a>
         ,{' '}
         <a
-          href="https://github.com/christensenca/ttb-label-verfication/blob/main/docs/TRADEOFFS.md"
+          href="https://github.com/christensenca/ttb-label-verification/blob/main/docs/TRADEOFFS.md"
           target="_blank"
           rel="noreferrer"
         >
@@ -168,7 +168,7 @@ export default function OverviewPage() {
         </a>
         , and{' '}
         <a
-          href="https://github.com/christensenca/ttb-label-verfication/blob/main/docs/architecture-decisions.md"
+          href="https://github.com/christensenca/ttb-label-verification/blob/main/docs/architecture-decisions.md"
           target="_blank"
           rel="noreferrer"
         >

@@ -42,7 +42,7 @@ Decisions captured from the planning conversation. Builds on [interview-highligh
 
 **Why:** Vision LLMs handle stylized brand fonts, ornate label layouts, and semantic field identification ("this block is the warning statement") in one call. Pure OCR (Tesseract) collapses on stylized fonts; cloud OCR (Textract, Vision) is tuned for receipts/forms, not labels. OpenRouter gives us model portability — `gpt-4o`, `claude`, `gemini` all behind one API, swap with one env var if we want to compare.
 
-**Latency budget:** Sarah's hard cutoff is 5 seconds end-to-end. Vision call is the long pole at ~2–4s. OpenRouter adds ~100–300ms of proxy latency — acceptable inside the budget. If it ever isn't, the swap path is `OPENAI_BASE_URL` (config-only, no code change).
+**Latency budget:** Sarah's hard cutoff is 5 seconds end-to-end. Vision call is the long pole at ~2–4s. OpenRouter adds ~100–300ms of proxy latency — acceptable inside the budget. The model itself is swappable via `OPENROUTER_MODEL` (config-only, no code change); the OpenRouter base URL is hard-coded in [pipeline/extract.py](../pipeline/extract.py) and would graduate to an env var if/when we move to Azure OpenAI.
 
 **Government Warning gets a dedicated path.** Per Jenny, the warning has to be exact word-for-word, all-caps, bold. Strict matching, not LLM-as-judge. Open question on whether that's a second vision call or a post-extraction validation of the warning block — see below.
 
@@ -75,7 +75,7 @@ Decisions captured from the planning conversation. Builds on [interview-highligh
 **Setup:**
 - Multi-stage Dockerfile: build the Vite bundle in a Node stage, copy `dist/` into the FastAPI image, serve static assets from FastAPI so there's one container/one port.
 - `/healthz` endpoint for Railway's restart logic.
-- Environment variables (not committed): `OPENAI_API_KEY`, `OPENAI_BASE_URL`.
+- Environment variables (not committed): `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `DATABASE_URL`, `IMAGE_STORAGE_DIR`. See [.env.example](../.env.example).
 
 **Trade-off acknowledged:** Railway has no free tier — $5/mo Hobby plan or trial credits.
 
@@ -85,16 +85,18 @@ Decisions captured from the planning conversation. Builds on [interview-highligh
 
 ---
 
-## 5. Request shape — sync for single, async for batch
+## 5. Request shape — async submission queue, polled by the UI
 
-**Decision:** Mixed mode.
+**Decision:** All submissions land asynchronously. Upload returns immediately with a `loaded` row; a separate Run step starts background extraction; the UI polls submission status until each row reaches `ready_for_review` or `extraction_failed`.
 
 | Endpoint | Shape | Use case |
 |---|---|---|
-| `POST /verify` | Sync, returns result inline in <5s | Single label, agent waits |
-| `POST /verify/batch` | Async, returns job ID; `GET /verify/batch/{id}` polls status | 200–300 labels from a single importer |
+| `POST /api/submissions` | Sync upload, returns submission row in `loaded` status | Single label |
+| `POST /api/submissions/bulk` | Sync upload, returns N rows in `loaded` status | CSV manifest + image files (≤100 / 200 MB) |
+| `POST /api/submissions/start` | Flips all `loaded` rows to `processing`, schedules background extraction | Reviewer's "Run" button |
+| `GET /api/submissions` / `GET /api/submissions/{id}` | Read the queue / one row | UI polling; reviewers open rows once `ready_for_review` |
 
-**Why:** Sync everywhere breaks at batch (no holding an HTTP connection for 25 minutes). Async everywhere makes single-label feel slow and adds polling/SSE complexity for the common case. Mixed is two code paths but each is simple.
+**Why:** Sync extraction at upload time breaks at batch (no holding an HTTP connection for 25 minutes) and would couple upload latency to the model's worst-case response time. Splitting upload from "Run" gives the reviewer a chance to load a batch, glance at it, and start extraction deliberately. The single async surface is two endpoints (`/submissions` for write, `/submissions/{id}` for read) and the UI polls — simpler than a sync-vs-async split.
 
 ---
 
