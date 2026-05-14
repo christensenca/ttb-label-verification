@@ -66,43 +66,44 @@ lock-down on `POST /api/admin/reset`.
 
 ---
 
-## 3. Higher-accuracy model with longer tail latency
+## 3. Speed-first model with a small accuracy trade
 
-**Decision.** Default to `google/gemini-3.1-pro-preview`
+**Decision.** Default to `google/gemini-3.1-flash-lite`
 ([`app/config.py:39`](../app/config.py),
-[`pipeline/extract.py:30`](../pipeline/extract.py)).
+[`pipeline/extract.py:36`](../pipeline/extract.py)).
 
-**What we gave up.** ~2.4 seconds of mean latency vs. the fastest
-viable alternative, and a higher per-call cost. The Pro model averages
-**5.8 s** in our benchmark — slightly *over* Sarah's stated 5-second
-ceiling.
+**What we gave up.** 4 percentage points of overall accuracy
+(95% → 91%) and 14 points on warning-text exactness (100% → 86%) vs.
+the Pro model. The Pro model is one env var away for deployments that
+prioritize warning-text strictness.
 
-**Why this was right.** Jenny's interview was specific: the Government
-Warning has to be exact, word-for-word, all-caps, and bold — and people
-try to slip non-compliant warnings past reviewers. Across the ten
-models we benchmarked
+**Why this was right.** Sarah's interview was specific: the system has
+a 5-second-per-label ceiling — anything over and the agents stop using
+it. Across the ten models we benchmarked
 ([`reports/bench-20260513-153639.md`](../reports/bench-20260513-153639.md)):
 
 | Model                        | Overall acc. | Warning text | Warning bold | Mean latency |
 | ---------------------------- | ------------ | ------------ | ------------ | ------------ |
-| **gemini-3.1-pro-preview**   | **95%**      | **100%**     | 57%          | **5783 ms**  |
-| gemini-3.1-flash-lite        | 91%          | 86%          | 86%          | 3430 ms      |
+| **gemini-3.1-flash-lite**    | **91%**      | 86%          | **86%**      | **3430 ms**  |
+| gemini-3.1-pro-preview       | 95%          | 100%         | 57%          | 5783 ms      |
 | gemini-2.5-flash-lite        | 88%          | 43%          | 0%           | 2675 ms      |
 | gpt-4o                       | 86%          | 86%          | 71%          | 5748 ms      |
 | gemini-2.5-pro               | 91%          | 100%         | 43%          | 14073 ms     |
 
-The Pro model wins on the field the regulation cares most about
-(warning text) and on overall accuracy. The 0.8 s over Sarah's 5 s
-ceiling is real and worth flagging.
+Flash Lite lands at 3.4 s mean — comfortably under the 5 s ceiling —
+and is actually *stronger* than the Pro model on warning *bold*
+detection (86% vs 57%). The overall accuracy gap is real but small,
+and the warning-text exactness gap is recoverable via a routed setup
+(see Production) when the regulatory cost of a miss is non-negotiable.
 
 **Mitigation today.** `OPENROUTER_MODEL` is an env var — operators can
-swap in `gemini-3.1-flash-lite` (3.4 s, 91% / 86% / 86%) for a
-latency-first deployment without touching code.
+swap in `gemini-3.1-pro-preview` (5.8 s, 95% / 100% / 57%) for an
+accuracy-first deployment without touching code.
 
 **Production.** Two paths worth considering: (a) a routed setup where
-fast model handles the easy fields and Pro is reserved for the warning
-block, or (b) cache + batch the vision call so the user-visible time is
-bounded even when the upstream model is slow. Either way, the model
+Flash Lite handles the easy fields and Pro is reserved for the warning
+block, or (b) cache + batch the vision call so the user-visible time
+is bounded even when the upstream model is slow. Either way, the model
 boundary is one function in
 [`pipeline/extract.py`](../pipeline/extract.py).
 

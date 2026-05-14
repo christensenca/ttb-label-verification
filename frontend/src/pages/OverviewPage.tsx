@@ -21,8 +21,8 @@ interface Tradeoff {
 
 const TRADEOFFS: Tradeoff[] = [
   {
-    title: 'Pro model over fast model',
-    body: 'Gemini 3.1 Pro: 95% accuracy, 5.8s mean. Flash variant at 91% / 3.4s is one env var away.',
+    title: 'Fast model over pro model',
+    body: 'Gemini 3.1 Flash Lite: 91% accuracy, 3.4s mean. Pro variant at 95% / 5.8s is one env var away.',
   },
   {
     title: 'Deterministic compare, not LLM-as-judge',
