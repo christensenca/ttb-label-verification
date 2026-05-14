@@ -302,7 +302,23 @@ async def create_submissions_bulk(
             status_code=400, detail=f"csv must be UTF-8: {exc}"
         ) from exc
 
-    reader = csv.DictReader(io.StringIO(text))
+    # Tolerate leading non-header lines (e.g. a stray title row from a
+    # spreadsheet export) by scanning for the first row whose cells include
+    # the required "filename" column.
+    all_lines = text.splitlines(keepends=True)
+    header_idx: int | None = None
+    for i, line in enumerate(all_lines):
+        cells = next(csv.reader(io.StringIO(line)), [])
+        if "filename" in [c.strip() for c in cells]:
+            header_idx = i
+            break
+    if header_idx is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"csv missing required columns: {_CSV_HEADER}",
+        )
+
+    reader = csv.DictReader(io.StringIO("".join(all_lines[header_idx:])))
     if reader.fieldnames is None:
         raise HTTPException(status_code=400, detail="csv has no header row")
     missing = [c for c in _CSV_HEADER if c not in reader.fieldnames]

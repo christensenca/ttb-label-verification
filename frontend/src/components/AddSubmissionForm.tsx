@@ -278,8 +278,10 @@ function SinglePanel({ onAdded, onDismiss }: PanelProps) {
 const CSV_TEMPLATE =
   'filename,brand,class_type,alcohol_content,net_contents,' +
   'producer_name,producer_address,is_imported,country_of_origin\n' +
-  'my-label.jpg,Brand Name,Whisky,40.0,750 mL,Producer Co.,"City, ST",false,\n' +
-  'imported.jpg,Other Brand,Vodka,40.0,1 L,Importer LLC,"Town, ST",true,Russia\n'
+  'label-001.jpg,Tito\'s Handmade Vodka,Vodka,40.0,750 mL,' +
+  'Fifth Generation Inc.,"Austin, TX",false,\n' +
+  'label-002.jpg,Hendrick\'s Gin,Gin,44.0,750 mL,' +
+  'William Grant and Sons Inc.,"New York, NY",true,Scotland\n'
 
 function downloadTemplate() {
   const blob = new Blob([CSV_TEMPLATE], { type: 'text/csv;charset=utf-8' })

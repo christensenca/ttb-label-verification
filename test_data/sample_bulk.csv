@@ -1,0 +1,3 @@
+filename,brand,class_type,alcohol_content,net_contents,producer_name,producer_address,is_imported,country_of_origin
+titos.jpg,Tito's Handmade Vodka,Vodka,40.0,375 mL,Fifth Generation Inc.,"Austin, TX",false,
+hendricks.jpg,Hendrick's Gin,Gin,44.0,750 mL,William Grant and Sons Inc.,"New York, NY",true,Scotland

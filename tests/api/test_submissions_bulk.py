@@ -58,6 +58,25 @@ def test_bulk_happy_path_creates_each_row(client, db_session):
     assert {r.expected_values["brand"] for r in user_rows} == {"Brand A", "Brand B"}
 
 
+def test_bulk_tolerates_leading_title_row(client, db_session):
+    csv = (
+        "expected-values-template\n"
+        f"{_HEADER}\n"
+        "label-a.jpg,Brand A,Whisky,40.0,750 mL,Producer A,City ST,false,\n"
+    )
+    response = client.post(
+        "/api/submissions/bulk",
+        files=[
+            ("csv", ("manifest.csv", io.BytesIO(csv.encode()), "text/csv")),
+            *_files(("label-a.jpg", _jpeg(), "image/jpeg")),
+        ],
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert len(body["created"]) == 1
+    assert body["errors"] == []
+
+
 def test_bulk_accepts_valid_skips_invalid(client, db_session):
     csv = (
         f"{_HEADER}\n"
