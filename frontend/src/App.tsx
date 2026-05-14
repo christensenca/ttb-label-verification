@@ -1,5 +1,6 @@
-import { Outlet, Route, Routes } from 'react-router-dom'
+import { NavLink, Outlet, Route, Routes } from 'react-router-dom'
 
+import OverviewPage from './pages/OverviewPage'
 import QueuePage from './pages/QueuePage'
 import ReviewPage from './pages/ReviewPage'
 
@@ -8,14 +9,24 @@ function Layout() {
     <div className="app-shell">
       <header className="app-topbar">
         <div className="app-topbar-inner">
-          <img
-            src="/favicon.svg"
-            alt=""
-            aria-hidden="true"
-            className="app-brand-logo"
-          />
-          <span className="app-brand">LabelGuard</span>
-          <span className="app-subtitle">AI-assisted TTB review</span>
+          <NavLink to="/" className="app-brand-link">
+            <img
+              src="/favicon.svg"
+              alt=""
+              aria-hidden="true"
+              className="app-brand-logo"
+            />
+            <span className="app-brand">LabelGuard</span>
+            <span className="app-subtitle">AI-assisted TTB review</span>
+          </NavLink>
+          <NavLink
+            to="/overview"
+            className={({ isActive }) =>
+              isActive ? 'app-overview-link active' : 'app-overview-link'
+            }
+          >
+            Overview
+          </NavLink>
         </div>
       </header>
       <main className="app-content">
@@ -39,6 +50,7 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<QueuePage />} />
+        <Route path="/overview" element={<OverviewPage />} />
         <Route path="/items/:id" element={<ReviewPage />} />
       </Route>
     </Routes>
