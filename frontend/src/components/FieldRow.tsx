@@ -65,13 +65,10 @@ function verdictDetail(field: Field): string {
 function renderBoldFormattingCell(field: Field, side: 'extracted' | 'expected') {
   // Expected is always "true" (we always expect bold header / regular body).
   if (side === 'expected') {
-    return <span className={styles.boolTrue}>true</span>
+    return <>true</>
   }
   // Extracted is derived from the verdict — pass = detected correctly.
-  if (field.effective_verdict === 'pass') {
-    return <span className={styles.boolTrue}>true</span>
-  }
-  return <span className={styles.boolFalse}>false</span>
+  return <>{field.effective_verdict === 'pass' ? 'true' : 'false'}</>
 }
 
 function renderValue(field: Field, side: 'extracted' | 'expected') {

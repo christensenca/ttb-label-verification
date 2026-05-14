@@ -91,16 +91,6 @@
   font-style: italic;
 }
 
-.boolTrue {
-  color: #2e7d32;
-  font-weight: 600;
-}
-
-.boolFalse {
-  color: #b71c1c;
-  font-weight: 600;
-}
-
 .verdictPill {
   display: inline-block;
   font-weight: 600;
