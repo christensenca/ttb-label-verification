@@ -221,6 +221,39 @@ def test_reset_deletes_user_image_keys_but_leaves_fixture_keys(
     assert not (tmp_path / user_key).exists(), "user image must be deleted"
 
 
+def test_reset_preserves_image_shared_with_fixture(
+    client, db_session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A user upload of byte-identical fixture image must not delete the shared file.
+
+    Storage is content-addressed (sha256), so re-uploading the same bytes returns
+    the same image_key. Admin reset must reference-count before unlinking.
+    """
+    settings = get_settings()
+    monkeypatch.setattr(settings, "image_storage_dir", tmp_path, raising=False)
+
+    store = FilesystemImageStore(tmp_path)
+    shared_key = store.put(b"\xff\xd8\xff shared bytes", "image/jpeg")
+    assert (tmp_path / shared_key).exists()
+
+    _make_submission(
+        db_session, is_fixture=True, status_value="loaded", image_key=shared_key
+    )
+    _make_submission(
+        db_session,
+        is_fixture=False,
+        status_value="ready_for_review",
+        image_key=shared_key,
+    )
+
+    response = client.post("/api/admin/reset", json={"confirm": True})
+    assert response.status_code == 200, response.text
+
+    assert (tmp_path / shared_key).exists(), (
+        "shared image file must remain — a fixture still references this key"
+    )
+
+
 def test_reset_with_no_submissions_returns_zeros(client, db_session):
     response = client.post("/api/admin/reset", json={"confirm": True})
     assert response.status_code == 200, response.text

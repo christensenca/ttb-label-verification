@@ -81,8 +81,22 @@ def reset_demo(
     # Best-effort filesystem cleanup for user images. Errors here are logged
     # but do not roll back the DB reset — the next Start has nothing to read
     # for the deleted rows anyway.
+    #
+    # Storage is content-addressed (sha256), so a user-uploaded byte-identical
+    # copy of a fixture image shares the fixture's image_key. Only delete keys
+    # that no remaining submission references, or we'd unlink the fixture's
+    # backing file too.
+    still_referenced = set(
+        db.execute(
+            select(Submission.image_key).where(Submission.image_key.in_(user_keys))
+        )
+        .scalars()
+        .all()
+    )
     store = FilesystemImageStore(get_settings().image_storage_dir)
     for key in user_keys:
+        if key in still_referenced:
+            continue
         try:
             store.delete(key)
         except Exception:
