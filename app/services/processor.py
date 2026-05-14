@@ -28,7 +28,7 @@ from app.api.schemas import ALL_FIELDS
 from app.config import get_settings
 from app.db.models import Comparison, Extraction, Submission
 from app.db.session import SessionLocal
-from app.services.diff import word_diff
+from app.services.diff import warning_text_diff, word_diff
 from pipeline.compare import compare as pipeline_compare
 
 logger = logging.getLogger(__name__)
@@ -225,7 +225,12 @@ def process_submission(
                 expected_value = _stringify(entry.get("expected"))
                 diff_extracted = diff_expected = None
                 if verdict == "fail" and field in _TEXT_FIELDS:
-                    diff_extracted, diff_expected = word_diff(
+                    differ = (
+                        warning_text_diff
+                        if field == "government_warning_text"
+                        else word_diff
+                    )
+                    diff_extracted, diff_expected = differ(
                         extracted_value or "", expected_value or ""
                     )
                 session.add(

@@ -11,17 +11,22 @@
   /* baseline text */
 }
 
+/* Extracted-side semantics:
+ *   .added   = token present in extracted but not expected (wrong/extra).
+ *   .removed = token present in expected but not extracted (missing — shown
+ *              inline at the gap position as a "should be here" marker).
+ */
 .added {
-  background-color: #c8e6c9;
-  color: #1b5e20;
+  background-color: #ffcdd2;
+  color: #b71c1c;
+  text-decoration: line-through;
   padding: 0 1px;
   border-radius: 2px;
 }
 
 .removed {
-  background-color: #ffcdd2;
-  color: #b71c1c;
-  text-decoration: line-through;
+  background-color: #c8e6c9;
+  color: #1b5e20;
   padding: 0 1px;
   border-radius: 2px;
 }

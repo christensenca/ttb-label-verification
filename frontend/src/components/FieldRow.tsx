@@ -89,15 +89,14 @@ function renderValue(field: Field, side: 'extracted' | 'expected') {
     return <span className={styles.empty}>—</span>
   }
   const value = side === 'extracted' ? field.extracted_value : field.expected_value
-  const diffTokens =
-    side === 'extracted' ? field.diff_extracted : field.diff_expected
   if (
+    side === 'extracted' &&
     field.effective_verdict === 'fail' &&
     DIFF_FIELDS.has(field.field) &&
-    diffTokens &&
-    diffTokens.length > 0
+    field.diff_extracted &&
+    field.diff_extracted.length > 0
   ) {
-    return <InlineDiff tokens={diffTokens} />
+    return <InlineDiff tokens={field.diff_extracted} />
   }
   if (value == null || value === '') {
     return <span className={styles.empty}>—</span>
